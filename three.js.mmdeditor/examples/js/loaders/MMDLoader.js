@@ -2364,12 +2364,12 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 				m.uniforms.outlineThickness.value = p2.edgeFlag === 1 ? 0.003 : 0.0;
 				m.uniforms.outlineColor.value = new THREE.Color( 0.0, 0.0, 0.0 );
 				m.uniforms.outlineAlpha.value = 1.0;
-				m.uniforms.toonMap.value = textures[ p2.toonIndex ];
 				m.uniforms.celShading.value = 1;
 
 				if ( p2.toonIndex === -1 ) {
 
 					m.uniforms.hasToonTexture.value = 0;
+					m.uniforms.toonMap.value = null;
 
 				} else {
 
@@ -2377,6 +2377,7 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 					var uuid = loadTexture( n, { defaultTexturePath: isDefaultToonTexture( n ) } );
 					m.uniforms.toonMap.value = textures[ uuid ];
 					m.uniforms.hasToonTexture.value = 1;
+
 				}
 
 			} else {
@@ -2412,6 +2413,8 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 				}
 
 			}
+
+			m.toonMap = m.uniforms.toonMap.value;
 
 			material.materials.push( m );
 
@@ -3556,12 +3559,14 @@ THREE.MMDMaterial = function ( parameters ) {
 
 	THREE.ShaderMaterial.call( this, parameters );
 
-//	this.type = 'MMDMaterial';
+	this.type = 'MMDMaterial';
 
 	this.faceOffset = null;
 	this.faceNum = null;
 	this.textureTransparency = false;
 	this.morphTransparency = false;
+
+	this.toonMap = null;
 
 	// the followings are copied from MeshPhongMaterial
 	this.color = new THREE.Color( 0xffffff ); // diffuse
@@ -3613,12 +3618,57 @@ THREE.MMDMaterial = function ( parameters ) {
 	this.morphTargets = false;
 	this.morphNormals = false;
 
+	this.lights = false;
+
 	this.setValues( parameters );
 
 };
 
 THREE.MMDMaterial.prototype = Object.create( THREE.ShaderMaterial.prototype );
 THREE.MMDMaterial.prototype.constructor = THREE.MMDMaterial;
+
+THREE.MMDMaterial.prototype.toJSON = function ( meta ) {
+
+	var data = THREE.ShaderMaterial.prototype.toJSON.call( this, meta );
+
+	if ( this.toonMap instanceof THREE.Texture ) data.toonMap = this.toonMap.toJSON( meta ).uuid;
+
+	data.uniforms = {};
+
+	var keys = Object.keys( this.uniforms );
+
+	for ( var i = 0; i < keys.length; i++ ) {
+
+		var key = keys[ i ];
+
+		data.uniforms[ key ] = {};
+
+		var keys2 = Object.keys( this.uniforms[ key ] );
+
+		for ( var j = 0; j < keys2.length; j++ ) {
+
+			var key2 = keys2[ j ];
+
+			data.uniforms[ key ][ key2 ] = this.uniforms[ key ][ key2 ];
+
+		}
+
+		if ( this.uniforms[ key ].type === 't' && this.uniforms[ key ].value !== null ) {
+
+			data.uniforms[ key ].value = this.uniforms[ key ].value.toJSON( meta ).uuid;
+
+		}
+
+	}
+
+	data.skinning = this.skinning;
+	data.lights = this.lights;
+	data.morphTargets = this.morphTargets;
+
+	return data;
+
+};
+
 
 /*
  * Shaders are copied from MeshPhongMaterial and then MMD spcific codes are inserted.

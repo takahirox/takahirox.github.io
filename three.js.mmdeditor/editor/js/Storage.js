@@ -69,8 +69,7 @@ var Storage = function () {
 
 			var transaction = database.transaction( [ 'states' ], 'readwrite' );
 			var objectStore = transaction.objectStore( 'states' );
-			// Note: material.uniforms.texture.value.image
-			//       doesn't seem to be able to be cloned.
+			//console.log(data);
 			var request = objectStore.put( data, 0 );
 			request.onsuccess = function ( event ) {
 

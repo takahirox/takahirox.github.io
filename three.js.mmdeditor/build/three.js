@@ -10866,6 +10866,57 @@ THREE.Geometry.prototype = {
 
 		}
 
+		var bones = [];
+		var skinIndices = [];
+		var skinWeights = [];
+		var faceVertexUvs = [];
+
+		if ( this.bones !== undefined ) {
+
+			for ( var i = 0; i < this.bones.length; i ++ ) {
+
+				bones.push( this.bones[ i ] );
+
+			}
+
+		}
+
+		if ( this.skinIndices !== undefined ) {
+
+			for ( var i = 0; i < this.skinIndices.length; i ++ ) {
+
+				skinIndices.push( this.skinIndices[ i ].x, this.skinIndices[ i ].y, this.skinIndices[ i ].z, this.skinIndices[ i ].w );
+
+			}
+
+		}
+
+		if ( this.skinWeights !== undefined ) {
+
+			for ( var i = 0; i < this.skinWeights.length; i ++ ) {
+
+				skinWeights.push( this.skinWeights[ i ].x, this.skinWeights[ i ].y, this.skinWeights[ i ].z, this.skinWeights[ i ].w );
+
+			}
+
+		}
+
+		if ( this.faceVertexUvs !== undefined ) {
+
+			for ( var i = 0; i < this.faceVertexUvs.length; i ++ ) {
+
+				faceVertexUvs[ i ] = [];
+
+				for ( var j = 0; j < this.faceVertexUvs[ i ].length; j ++ ) {
+
+					faceVertexUvs[ i ].push( this.faceVertexUvs[ i ][ j ] );
+
+				}
+
+			}
+
+		}
+
 		function setBit( value, position, enabled ) {
 
 			return enabled ? value | ( 1 << position ) : value & ( ~ ( 1 << position ) );
@@ -10930,6 +10981,11 @@ THREE.Geometry.prototype = {
 		if ( colors.length > 0 ) data.data.colors = colors;
 		if ( uvs.length > 0 ) data.data.uvs = [ uvs ]; // temporal backward compatibility
 		data.data.faces = faces;
+		if ( bones.length > 0 ) data.data.bones = bones;
+		if ( skinIndices.length > 0 ) data.data.skinIndices = skinIndices;
+		if ( skinWeights.length > 0 ) data.data.skinWeights = skinWeights;
+		if ( faceVertexUvs.length > 0 ) data.data.faceVertexUvs = faceVertexUvs;
+		data.data.influencesPerVertex = 4;
 
 		return data;
 
@@ -19003,6 +19059,7 @@ THREE.MaterialLoader.prototype = {
 		if ( json.emissive !== undefined ) material.emissive.setHex( json.emissive );
 		if ( json.specular !== undefined ) material.specular.setHex( json.specular );
 		if ( json.shininess !== undefined ) material.shininess = json.shininess;
+		if ( json.defined !== undefined ) material.defines = json.defines;
 		if ( json.uniforms !== undefined ) material.uniforms = json.uniforms;
 		if ( json.vertexShader !== undefined ) material.vertexShader = json.vertexShader;
 		if ( json.fragmentShader !== undefined ) material.fragmentShader = json.fragmentShader;
@@ -19026,6 +19083,7 @@ THREE.MaterialLoader.prototype = {
 		// maps
 
 		if ( json.map !== undefined ) material.map = this.getTexture( json.map );
+		if ( json.toonMap !== undefined ) material.toonMap = this.getTexture( json.toonMap );
 
 		if ( json.alphaMap !== undefined ) {
 
@@ -19080,6 +19138,28 @@ THREE.MaterialLoader.prototype = {
 
 		if ( json.aoMap !== undefined ) material.aoMap = this.getTexture( json.aoMap );
 		if ( json.aoMapIntensity !== undefined ) material.aoMapIntensity = json.aoMapIntensity;
+
+		if ( material.uniforms !== undefined ) {
+
+			var keys = Object.keys( material.uniforms );
+
+			for ( var i = 0; i < keys.length; i++ ) {
+
+				var key = keys[ i ];
+				if( material.uniforms[ key ].type === 't' &&
+				    material.uniforms[ key ].value !== null ) {
+
+					material.uniforms[ key ].value = this.getTexture( material.uniforms[ key ].value );
+
+				}
+
+			}
+
+		}
+
+		if ( json.skinning !== undefined ) material.skinning = json.skinning;
+		if ( json.lights !== undefined ) material.lights = json.lights;
+		if ( json.morphTargets !== undefined ) material.morphTargets = json.morphTargets;
 
 		// MultiMaterial
 
@@ -19609,6 +19689,7 @@ THREE.ObjectLoader.prototype = {
 					break;
 
 				case 'Mesh':
+				case 'SkinnedMesh':
 
 					var geometry = getGeometry( data.geometry );
 					var material = getMaterial( data.material );
@@ -19616,6 +19697,31 @@ THREE.ObjectLoader.prototype = {
 					if ( geometry.bones && geometry.bones.length > 0 ) {
 
 						object = new THREE.SkinnedMesh( geometry, material );
+
+						if ( object.skeleton !== undefined && object.skeleton.bones !== undefined && 
+						     data.bones !== undefined ) {
+
+							var bones1 = object.skeleton.bones;
+							var bones2 = data.bones;
+
+							for ( var i = 0; i < bones1.length; i++ ) {
+
+								var b = bones1[ i ];
+
+								var m1 = bones1[ i ].matrix.elements;
+								var m2 = bones2[ i ].object.matrix;
+
+								for ( var j = 0; j < m1.length; j++ ) {
+
+									m1[ j ] = m2[ j ];
+
+								}
+
+								b.matrix.decompose( b.position, b.quaternion, b.scale );
+
+							}
+
+						}
 
 					} else {
 
@@ -23095,6 +23201,32 @@ THREE.SkinnedMesh.prototype.updateMatrixWorld = function( force ) {
 THREE.SkinnedMesh.prototype.clone = function() {
 
 	return new this.constructor( this.geometry, this.material, this.useVertexTexture ).copy( this );
+
+};
+
+THREE.SkinnedMesh.prototype.toJSON = function ( meta ) {
+
+	var data = THREE.Mesh.prototype.toJSON.call( this, meta );
+
+	var bones = [];
+
+	if ( this.skeleton !== undefined ) {
+
+		for ( var i = 0; i < this.skeleton.bones.length; i++ ) {
+
+			bones[ i ] = this.skeleton.bones[ i ].toJSON( meta );
+
+		}
+
+	}
+
+	if ( bones.length > 0 ) {
+
+		data.object.bones = bones;
+
+	}
+
+	return data;
 
 };
 
@@ -32709,10 +32841,10 @@ THREE.CurveUtils = {
 
 		// To check if my formulas are correct
 
-		var h00 = 6 * t * t - 6 * t; 	// derived from 2t^3 − 3t^2 + 1
-		var h10 = 3 * t * t - 4 * t + 1; // t^3 − 2t^2 + t
-		var h01 = - 6 * t * t + 6 * t; 	// − 2t3 + 3t2
-		var h11 = 3 * t * t - 2 * t;	// t3 − t2
+		var h00 = 6 * t * t - 6 * t; 	// derived from 2t^3 ? 3t^2 + 1
+		var h10 = 3 * t * t - 4 * t + 1; // t^3 ? 2t^2 + t
+		var h01 = - 6 * t * t + 6 * t; 	// ? 2t3 + 3t2
+		var h11 = 3 * t * t - 2 * t;	// t3 ? t2
 
 		return h00 + h10 + h01 + h11;
 
