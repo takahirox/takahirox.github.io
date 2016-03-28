@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<!--
+@author Daosheng Mu / https://github.com/DaoshengMu/
+-->
+<html>
+	<head>
+		<title>three.js webgl - materials - tga texture</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #000;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #fff;
+				margin: 0px;
+				padding: 0px;
+				overflow: hidden;
+			}
+
+			#stats { position: absolute; top:0; left: 0 }
+			#stats #fps { background: transparent !important }
+			#stats #fps #fpsText { color: #777 !important }
+			#stats #fps #fpsGraph { display: none }
+		</style>
+	</head>
+	<body>
+		<div id="info">
+		</div>
+		<script src="./lib/three.js"></script>
+		<script src="./lib/TGALoader.js"></script>
+
+		<script>
+
+			var SCREEN_WIDTH = window.innerWidth;
+			var SCREEN_HEIGHT = window.innerHeight;
+
+			var container, stats;
+
+			var camera, scene, renderer;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+
+				camera = new THREE.PerspectiveCamera( 35, SCREEN_WIDTH / SCREEN_HEIGHT, 10, 2000 );
+				camera.position.z = 200;
+
+				scene = new THREE.Scene();
+
+				scene.add( new THREE.AmbientLight( 0xffffff, 0.4 ) );
+
+				var light = new THREE.DirectionalLight( 0xffffff, 1 );
+				light.position.set( 1, 1, 1 );
+				scene.add( light );
+
+				var textureLoader = new THREE.TextureLoader();
+				var tgaLoader = new THREE.TGALoader();
+
+				var geometry = new THREE.PlaneGeometry( 50, 50 );
+
+				var tgaTexture = tgaLoader.load( 'textures/cat_diff.tga' );
+				var material1 = new THREE.MeshPhongMaterial( { color: 0xffffff, map: tgaTexture } );
+				var mesh1 = new THREE.Mesh( geometry, material1 );
+				mesh1.position.x = - 60;
+				scene.add( mesh1 );
+
+				var bmpTexture = textureLoader.load( 'textures/cat_diff.bmp' );
+				var material2 = new THREE.MeshPhongMaterial( { color: 0xffffff, map: bmpTexture } );
+				var mesh2 = new THREE.Mesh( geometry, material2 );
+				mesh2.position.x =    0;
+				scene.add( mesh2 );
+
+				var pngTexture = textureLoader.load( 'textures/cat_diff.png' );
+				var material3 = new THREE.MeshPhongMaterial( { color: 0xffffff, map: pngTexture } );
+				var mesh3 = new THREE.Mesh( geometry, material3 );
+				mesh3.position.x =   60;
+				scene.add( mesh3 );
+
+				// RENDERER
+
+				renderer.setClearColor( 0xf2f7ff );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+				renderer.domElement.style.position = "relative";
+				container.appendChild( renderer.domElement );
+
+				var div = document.getElementById( 'info' );
+				div.innerText  = 'Left: TGA texture flipY=' + tgaTexture.flipY + ', ';
+				div.innerText += 'Middle: BMP texture flipY=' + bmpTexture.flipY + ', ';
+				div.innerText += 'Right: PNG texture flipY=' + pngTexture.flipY;
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+			}
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>
