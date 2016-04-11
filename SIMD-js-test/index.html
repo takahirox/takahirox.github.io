@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ThreeJS Benchmark Tests - SIMD</title>
+</head>
+<body>
+
+<div id="info"></div>
+
+During this Benchmarking test the browser will be unresponsive.<br/><br/>
+
+Benchmark output is written to the JavaScript console.  To access the JavaScript console presss Ctrl-Shift-J.
+
+<script>
+
+if ( 'undefined' === typeof SIMD ) {
+
+	throw 'run on browser which supports SIMD';
+
+}
+
+var MAX_NUM = 0x10000000;
+var array1 = new Float32Array( MAX_NUM );
+var array2 = new Float32Array( MAX_NUM );
+var array3 = new Float32Array( MAX_NUM );
+
+function initArray ( array, num ) {
+
+	for ( var i = 0; i < num; i ++ ) {
+
+		array[ i ] = 2.0;
+
+	}
+
+}
+
+function runFunc ( func, num, array1, array2, array3 ) {
+
+	var startTime, endTime;
+
+	// warmup
+	initArray( array1, num );
+	initArray( array2, num );
+	initArray( array3, num );
+	func( num, array1, array2, array3 );
+
+	initArray( array1, num );
+	initArray( array2, num );
+	initArray( array3, num );
+
+	startTime = performance.now();
+
+	func( num, array1, array2, array3 );
+
+	endTime = performance.now();
+
+	return endTime - startTime;
+
+}
+
+function funcScalar ( num, array1, array2, array3 ) {
+
+	for ( var i = 0; i < num; i ++ ) {
+
+		array3[ i ] = array1[ i ] * array2[ i ];
+
+	}
+
+}
+
+function funcSIMD ( num, array1, array2, array3 ) {
+
+	for ( var i = 0; i < num; i += 4 ) {
+
+		SIMD.Float32x4.store( array3, i, SIMD.Float32x4.mul( SIMD.Float32x4.load( array1, i ), SIMD.Float32x4.load( array2, i ) ) );
+
+	}
+
+}
+
+function run () {
+
+	for ( var i = 4; i < MAX_NUM; i = i << 1 ) {
+
+		console.log( i );
+		console.log( runFunc( funcScalar, i, array1, array2, array3 ) );
+		console.log( runFunc( funcSIMD,   i, array1, array2, array3 ) );
+		console.log( runFunc( funcScalar, i, array1, array2, array3 ) );
+		console.log( runFunc( funcSIMD,   i, array1, array2, array3 ) );
+
+	}
+
+}
+
+run();
+
+</script>
+
+</body>
+</html>
