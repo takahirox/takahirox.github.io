@@ -21,7 +21,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 	var _width, _height;
 
 	var _compColor, _compNormalDepth, _compLight, _compFinal;
-	var _passColor, _passNormalDepth, _passLight, _passFinal, _passFXAA;
+	var _passColor, _passNormalDepth, _passLight, _passLightFullscreen, _passFinal, _passFXAA;
 
 	// external properties
 
@@ -100,8 +100,12 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	var initPassLight = function () {
 
+		_passLightFullscreen = new THREE.RenderPass();
+		_passLightFullscreen.clear = true;
+		_passLightFullscreen.camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+
 		_passLight = new THREE.RenderPass();
-		_passLight.clear = true;
+		_passLight.clear = false;
 
 		var rt = new THREE.WebGLRenderTarget( _width, _height, {
 			minFilter: THREE.NearestFilter,
@@ -114,6 +118,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		rt.texture.generateMipamps = false;
 
 		_compLight = new THREE.EffectComposer( _this.renderer, rt );
+		_compLight.addPass( _passLightFullscreen );
 		_compLight.addPass( _passLight );
 
 	};
@@ -124,12 +129,14 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_passFinal.clear = true;
 		_passFinal.uniforms[ 'samplerLight' ].value = _compLight.renderTarget2.texture;
 		_passFinal.material.blending = THREE.NoBlending;
+		_passFinal.material.depthWrite = false;
 
 		var rt = new THREE.WebGLRenderTarget( _width, _height, {
 			minFilter: THREE.NearestFilter,
 			magFilter: THREE.LinearFilter,
 			format: THREE.RGBFormat,
-			type: THREE.UnsignedByteType
+			type: THREE.UnsignedByteType,
+			depthBuffer: false
 		} );
 
 		rt.texture.generateMipamps = false;
@@ -143,6 +150,16 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 	var initLightScene = function ( scene ) {
 
 		if ( ! scene.userData.lightScene ) scene.userData.lightScene = new THREE.Scene();
+
+		if ( ! scene.userData.lightFullscreenScene ) {
+
+			scene.userData.lightFullscreenScene = new THREE.Scene();
+			scene.userData.lightFullscreenScene.userData.emissiveLight = createDeferredEmissiveLight();
+			scene.userData.lightFullscreenScene.add( scene.userData.lightFullscreenScene.userData.emissiveLight );
+
+		}
+
+		_passLightFullscreen.scene = scene.userData.lightFullscreenScene;
 
 	};
 
@@ -236,9 +253,31 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
+	var createDeferredEmissiveLight = function () {
+
+		var shader = THREE.ShaderDeferred[ 'emissiveLight' ];
+
+		var material = new THREE.ShaderMaterial( {
+			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
+			vertexShader: shader.vertexShader,
+			fragmentShader: shader.fragmentShader
+		} );
+
+		material.blending = THREE.NoBlending;
+		material.depthWrite = false;
+
+		material.uniforms[ 'samplerColor' ].value = _compColor.renderTarget2.texture;
+
+		var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
+		var mesh = new THREE.Mesh( geometry, material );
+
+		return mesh;
+
+	};
+
 	var createDeferredPointLight = function ( light ) {
 
-		var shader = THREE.ShaderDeferred[ 'light' ];
+		var shader = THREE.ShaderDeferred[ 'pointLight' ];
 
 		var material = new THREE.ShaderMaterial( {
 			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
@@ -261,6 +300,15 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		mesh.userData.originalLight = light;
 
 		return mesh;
+
+	};
+
+	var updateDeferredEmissiveLight = function ( light, camera ) {
+
+		var uniforms = light.material.uniforms;
+
+		uniforms[ 'viewWidth' ].value = _width;
+		uniforms[ 'viewHeight' ].value = _height;
 
 	};
 
@@ -347,6 +395,8 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 	};
 
 	var renderLight = function ( scene, camera ) {
+
+		updateDeferredEmissiveLight( scene.userData.lightFullscreenScene.userData.emissiveLight, camera );
 
 		var lightScene = scene.userData.lightScene;
 
@@ -577,10 +627,10 @@ THREE.ShaderDeferred = {
 			"void main() {",
 
 				"vec4 color;",
-				"color.r = vec3_to_float( diffuse );",
-				"color.g = vec3_to_float( emissive );",
-				"color.b = vec3_to_float( specular );",
-				"color.a = shininess;",
+				"color.x = vec3_to_float( diffuse );",
+				"color.y = vec3_to_float( emissive );",
+				"color.z = vec3_to_float( specular );",
+				"color.w = shininess;",
 				"gl_FragColor = color;",
 
 			"}"
@@ -589,7 +639,51 @@ THREE.ShaderDeferred = {
 
 	},
 
-	light: {
+	emissiveLight: {
+
+		uniforms: {
+
+			samplerColor: { type: "t", value: null },
+			viewWidth: { type: "f", value: 800 },
+			viewHeight: { type: "f", value: 600 },
+
+		},
+
+		vertexShader : [
+
+			"void main() { ",
+
+				"gl_Position = vec4( sign( position.xy ), 0.0, 1.0 );",
+
+			"}"
+
+		].join( '\n' ),
+
+		fragmentShader : [
+
+			"uniform sampler2D samplerColor;",
+
+			"uniform float viewHeight;",
+			"uniform float viewWidth;",
+
+			THREE.DeferredShaderChunk[ "unpackFloat" ],
+
+			"void main() {",
+
+				"vec2 texCoord = gl_FragCoord.xy / vec2( viewWidth, viewHeight );",
+
+				"vec4 colorMap = texture2D( samplerColor, texCoord );",
+				"vec3 emissive = float_to_vec3( abs( colorMap.y ) );",
+
+				"gl_FragColor = vec4( emissive, 1.0 );",
+
+			"}"
+
+		].join( '\n' )
+
+	},
+
+	pointLight: {
 
 		uniforms: {
 
@@ -677,7 +771,7 @@ THREE.ShaderDeferred = {
 				"vec3 schlick = specular + vec3( 1.0 - specular ) * pow( 1.0 - dot( lightVector, halfVector ), 5.0 );",
 				"specular = schlick * max( pow( dotNormalHalf, shininess ), 0.0 ) * diffuse * specularNormalization;",
 
-				"gl_FragColor = vec4( lightColor * ( diffuse * dot( normal, lightVector ) + specular ) + emissive, attenuation );",
+				"gl_FragColor = vec4( lightColor * ( diffuse * dot( normal, lightVector ) + specular ), attenuation );",
 				"//gl_FragColor = vec4( lightColor, 0.5 );",
 
 			"}"

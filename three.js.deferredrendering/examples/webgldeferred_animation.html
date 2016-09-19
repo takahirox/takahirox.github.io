@@ -131,6 +131,7 @@
 				loader.load( "models/skinned/knight.js", function( geometry, materials ) {
 
 					var material = materials[ 0 ];
+					material.emissive.set( 0x101010 );
 					material.skinning = true;
 
 					var mesh = new THREE.SkinnedMesh( geometry, material );
