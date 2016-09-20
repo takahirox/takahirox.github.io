@@ -68,7 +68,20 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 			minFilter: THREE.NearestFilter,
 			magFilter: THREE.NearestFilter,
 			format: THREE.RGBAFormat,
-			type: THREE.FloatType
+			type: THREE.FloatType,
+			stencilBuffer: true,
+			depthTexture: new THREE.DepthTexture(
+				_width,
+				_height,
+				THREE.UnsignedInt248Type,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				THREE.DepthStencilFormat
+			)
 		} );
 
 		rt.texture.generateMipamps = false;
@@ -88,7 +101,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 			magFilter: THREE.NearestFilter,
 			format: THREE.RGBAFormat,
 			type: THREE.FloatType,
-			stencilBuffer: true
+			depthTexture: _compNormalDepth.renderTarget2.depthTexture
 		} );
 
 		rt.texture.generateMipamps = false;
@@ -112,7 +125,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 			magFilter: THREE.NearestFilter,
 			format: THREE.RGBAFormat,
 			type: THREE.FloatType,
-			depthBuffer: false  // TODO: why this's necessary?
+			depthTexture: _compNormalDepth.renderTarget2.depthTexture
 		} );
 
 		rt.texture.generateMipamps = false;
@@ -372,6 +385,10 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_this.renderer.autoClearDepth = true;
 		_this.renderer.autoClearStencil = true;
 
+		_gl.enable( _gl.STENCIL_TEST );
+		_gl.stencilFunc( _gl.ALWAYS, 1, 0xffffffff );
+		_gl.stencilOp( _gl.REPLACE, _gl.REPLACE, _gl.REPLACE );
+
 		_compNormalDepth.render();
 
 	};
@@ -386,9 +403,8 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_this.renderer.autoClearDepth = true;
 		_this.renderer.autoClearStencil = false;
 
-		_gl.enable( _gl.STENCIL_TEST );
-		_gl.stencilFunc( _gl.ALWAYS, 1, 0xffffffff );
-		_gl.stencilOp( _gl.REPLACE, _gl.REPLACE, _gl.REPLACE );
+		_gl.stencilFunc( _gl.EQUAL, 1, 0xffffffff );
+		_gl.stencilOp( _gl.KEEP, _gl.KEEP, _gl.KEEP );
 
 		_compColor.render();
 
@@ -423,8 +439,6 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_this.renderer.autoClearDepth = false;
 		_this.renderer.autoClearStencil = false;
 
-		_gl.stencilFunc( _gl.EQUAL, 1, 0xffffffff );
-
 		_compLight.render();
 
 		_gl.disable( _gl.STENCIL_TEST );
@@ -453,6 +467,10 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_compColor.setSize( _width, _height );
 		_compLight.setSize( _width, _height );
 		_compFinal.setSize( _width, _height );
+
+		_compNormalDepth.renderTarget2.depthTexture.image.width = _width;
+		_compNormalDepth.renderTarget2.depthTexture.image.height = _height;
+		_compNormalDepth.renderTarget2.depthTexture.needsUpdate = true;
 
 		_passFXAA.uniforms[ 'resolution' ].value.set( 1 / _width, 1 / _height );
 
