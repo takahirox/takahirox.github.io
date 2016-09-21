@@ -78,7 +78,7 @@
 				renderer.setSize( WIDTH, HEIGHT );
 
 				camera = new THREE.PerspectiveCamera( VIEW_ANGLE, WIDTH / HEIGHT, NEAR, FAR );
-				camera.position.z = 100;
+				camera.position.z = 150;
 
 				scene = new THREE.Scene();
 
@@ -91,8 +91,9 @@
 				container.appendChild( renderer.domElement );
 				container.appendChild( stats.domElement );
 
+				initKnight();
+				initRoom();
 				initLights();
-				initObjects();
 
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				window.addEventListener( 'resize', onWindowResize, false );
@@ -101,30 +102,7 @@
 
 			}
 
-			function initLights() {
-
-				var distance = 20;
-
-				var c = new THREE.Vector3();
-				var geometry = new THREE.SphereGeometry( 1, 1, 1 );
-
-				for ( var i = 0; i < numLights; i ++ ) {
-
-					var light = new THREE.PointLight( 0xffffff, 2.0, distance );
-					c.set( Math.random(), Math.random(), Math.random() ).normalize();
-					light.color.setRGB( c.x, c.y, c.z );
-					scene.add( light );
-					lights.push( light );
-
-					var material = new THREE.MeshBasicMaterial( { color: light.color } );
-					var emitter = new THREE.Mesh( geometry, material );
-					light.add( emitter );
-
-				}
-
-			}
-
-			function initObjects() {
+			function initKnight() {
 
 				var loader = new THREE.JSONLoader();
 
@@ -146,6 +124,71 @@
 					ready = true;
 
 				} );
+
+			}
+
+			function initLights() {
+
+				var distance = 25;
+
+				var c = new THREE.Vector3();
+				var geometry = new THREE.SphereGeometry( 1, 1, 1 );
+
+				for ( var i = 0; i < numLights; i ++ ) {
+
+					var light = new THREE.PointLight( 0xffffff, 2.0, distance );
+					c.set( Math.random(), Math.random(), Math.random() ).normalize();
+					light.color.setRGB( c.x, c.y, c.z );
+					scene.add( light );
+					lights.push( light );
+
+					var material = new THREE.MeshBasicMaterial( { color: light.color } );
+					var emitter = new THREE.Mesh( geometry, material );
+					light.add( emitter );
+
+				}
+
+			}
+
+			function initRoom() {
+
+				var size = 100;
+				var geometry = new THREE.PlaneBufferGeometry( size, size );
+				var material = new THREE.MeshPhongMaterial( { color: 0x222222, specular: 0x222222, shininess: 75 } );
+
+				var room = new THREE.Object3D();
+				room.position.y = size / 2 - 30;
+
+				// top
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.rotation.x = Math.PI/2;
+				mesh.position.y = size / 2;
+				room.add( mesh );
+
+				// bottom
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.rotation.x = -Math.PI/2;
+				mesh.position.y = -size / 2;
+				room.add( mesh );
+
+				// left
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.x = -size / 2;
+				mesh.rotation.y = Math.PI/2;
+				room.add( mesh );
+
+				// right
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.x = size / 2;
+				mesh.rotation.y = -Math.PI/2;
+				room.add( mesh );
+
+				// back
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.z = -size / 2;
+				room.add( mesh );
+
+				scene.add( room );
 
 			}
 
@@ -196,9 +239,9 @@
 				for ( var i = 0, il = lights.length; i < il; i ++ ) {
 
 					var light = lights[ i ];
-					var x = Math.sin( time + i * 7.0 ) * 40;
-					var y = Math.cos( time + i * 5.0 ) * 80 - 30;
-					var z = Math.cos( time + i * 3.0 ) * 40;
+					var x = Math.sin( time + i * 7.0 ) * 45;
+					var y = Math.cos( time + i * 5.0 ) * 45 + 20;
+					var z = Math.cos( time + i * 3.0 ) * 45;
 					light.position.set( x, y, z );
 
 				}

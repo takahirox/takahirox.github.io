@@ -140,7 +140,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 		_passFinal = new THREE.ShaderPass( THREE.ShaderDeferred[ 'composite' ] );
 		_passFinal.clear = true;
-		_passFinal.uniforms[ 'samplerLight' ].value = _compLight.renderTarget2.texture;
+		_passFinal.uniforms.samplerLight.value = _compLight.renderTarget2.texture;
 		_passFinal.material.blending = THREE.NoBlending;
 		_passFinal.material.depthWrite = false;
 
@@ -279,7 +279,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		material.blending = THREE.NoBlending;
 		material.depthWrite = false;
 
-		material.uniforms[ 'samplerColor' ].value = _compColor.renderTarget2.texture;
+		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
 
 		var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
 		var mesh = new THREE.Mesh( geometry, material );
@@ -304,8 +304,8 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		material.depthWrite = false;
 		material.depthFunc = THREE.GreaterEqualDepth;
 
-		material.uniforms[ 'samplerNormalDepth' ].value = _compNormalDepth.renderTarget2.texture;
-		material.uniforms[ 'samplerColor' ].value = _compColor.renderTarget2.texture;
+		material.uniforms.samplerNormalDepth.value = _compNormalDepth.renderTarget2.texture;
+		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
 
 		var geometry = new THREE.SphereGeometry( 1, 16, 8 );
 		var mesh = new THREE.Mesh( geometry, material );
@@ -320,8 +320,8 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 		var uniforms = light.material.uniforms;
 
-		uniforms[ 'viewWidth' ].value = _width;
-		uniforms[ 'viewHeight' ].value = _height;
+		uniforms.viewWidth.value = _width;
+		uniforms.viewHeight.value = _height;
 
 	};
 
@@ -331,21 +331,22 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		var distance = originalLight.distance;
 		var uniforms = light.material.uniforms;
 
-		uniforms[ 'matProjInverse' ].value.getInverse( camera.projectionMatrix );
-		uniforms[ 'viewWidth' ].value = _width;
-		uniforms[ 'viewHeight' ].value = _height;
-		uniforms[ 'lightColor' ].value.copy( originalLight.color );
+		uniforms.matProjInverse.value.getInverse( camera.projectionMatrix );
+		uniforms.viewWidth.value = _width;
+		uniforms.viewHeight.value = _height;
+		uniforms.lightColor.value.copy( originalLight.color );
 
 		if ( distance > 0 ) {
 
 			light.scale.set( 1, 1, 1 ).multiplyScalar( distance );
-			uniforms[ 'lightRadius' ].value = distance;
-			uniforms[ 'lightPositionVS' ].value.setFromMatrixPosition( originalLight.matrixWorld ).applyMatrix4( camera.matrixWorldInverse );
+			uniforms.lightRadius.value = distance;
+			uniforms.lightIntensity.value = distance;
+			uniforms.lightPositionVS.value.setFromMatrixPosition( originalLight.matrixWorld ).applyMatrix4( camera.matrixWorldInverse );
 			light.position.setFromMatrixPosition( originalLight.matrixWorld );
 
 		} else {
 
-			uniforms[ 'lightRadius' ].value = Infinity;
+			uniforms.lightRadius.value = Infinity;
 
 		}
 
@@ -472,7 +473,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_compNormalDepth.renderTarget2.depthTexture.image.height = _height;
 		_compNormalDepth.renderTarget2.depthTexture.needsUpdate = true;
 
-		_passFXAA.uniforms[ 'resolution' ].value.set( 1 / _width, 1 / _height );
+		_passFXAA.uniforms.resolution.value.set( 1 / _width, 1 / _height );
 
 	};
 
@@ -714,6 +715,7 @@ THREE.ShaderDeferred = {
 			viewHeight: { type: "f", value: 600 },
 
 			lightColor: { type: "c", value: new THREE.Color( 0x000000 ) },
+			lightIntensity: { type: "f", value: 1.0 },
 			lightPositionVS : { type: "v3", value: new THREE.Vector3( 0, 1, 0 ) },
 			lightRadius: { type: "f", value: 1.0 }
 
@@ -739,6 +741,7 @@ THREE.ShaderDeferred = {
 			"uniform float viewWidth;",
 
 			"uniform vec3 lightColor;",
+			"uniform float lightIntensity;",
 			"uniform vec3 lightPositionVS;",
 			"uniform float lightRadius;",
 
@@ -781,16 +784,16 @@ THREE.ShaderDeferred = {
 				"float attenuation = 1.0 / ( denom * denom );",
 				"attenuation = ( attenuation - cutoff ) / ( 1.0 - cutoff );",
 				"attenuation = max( attenuation, 0.0 );",
-				"//attenuation *= attenuation;",
+				"attenuation *= attenuation;",
 
+				"lightVector = normalize( lightVector );",
 				"vec3 halfVector = normalize( lightVector - normalize( vertexPositionVS.xyz ) );",
 				"float dotNormalHalf = max( dot( normal, halfVector ), 0.0 );",
 				"float specularNormalization = ( shininess + 2.0001 ) / 8.0;",
 				"vec3 schlick = specular + vec3( 1.0 - specular ) * pow( 1.0 - dot( lightVector, halfVector ), 5.0 );",
 				"specular = schlick * max( pow( dotNormalHalf, shininess ), 0.0 ) * diffuse * specularNormalization;",
 
-				"gl_FragColor = vec4( lightColor * ( diffuse * dot( normal, lightVector ) + specular ), attenuation );",
-				"//gl_FragColor = vec4( lightColor, 0.5 );",
+				"gl_FragColor = vec4( lightIntensity * lightColor * ( diffuse * dot( normal, lightVector ) + specular ), attenuation );",
 
 			"}"
 
