@@ -2,10 +2,23 @@
  * @author takahiro / https://github.com/takahirox
  *
  * Dependencies
+ *  - THREE.CopyShader
  *  - THREE.RenderPass
  *  - THREE.ShaderPass
  *  - THREE.EffectComposer
  *  - THREE.FXAAShader
+ *
+ * TODO
+ *  - MultiMaterials
+ *  - shared material
+ *  - transparency
+ *  - shadow
+ *  - optimization
+ *  - MRT (when it's available on Three.js)
+ *  - AmbientLight
+ *  - DirectionalLight
+ *  - HemisphereLight
+ *  - SpotLight
  */
 
 THREE.WebGLDeferredRenderer = function ( parameters ) {
@@ -21,7 +34,9 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 	var _width, _height;
 
 	var _compColor, _compNormalDepth, _compLight, _compFinal;
-	var _passColor, _passNormalDepth, _passLight, _passLightFullscreen, _passFinal, _passFXAA;
+	var _passColor, _passNormalDepth, _passLight, _passLightFullscreen, _passFinal, _passForward, _passCopy, _passFXAA;
+
+	var _antialias = false, _hasTransparentObject = false;
 
 	// external properties
 
@@ -143,19 +158,27 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_passFinal.uniforms.samplerLight.value = _compLight.renderTarget2.texture;
 		_passFinal.material.blending = THREE.NoBlending;
 		_passFinal.material.depthWrite = false;
+		_passFinal.material.depthTest = false;
+
+		_passForward = new THREE.RenderPass();
+		_passForward.clear = false;
+
+		_passCopy = new THREE.ShaderPass( THREE.CopyShader );
 
 		var rt = new THREE.WebGLRenderTarget( _width, _height, {
 			minFilter: THREE.NearestFilter,
 			magFilter: THREE.LinearFilter,
 			format: THREE.RGBFormat,
 			type: THREE.UnsignedByteType,
-			depthBuffer: false
+			depthTexture: _compNormalDepth.renderTarget2.depthTexture
 		} );
 
 		rt.texture.generateMipamps = false;
 
 		_compFinal = new THREE.EffectComposer( _this.renderer, rt );
 		_compFinal.addPass( _passFinal );
+		_compFinal.addPass( _passForward );
+		_compFinal.addPass( _passCopy );
 		_compFinal.addPass( _passFXAA );
 
 	};
@@ -354,19 +377,74 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	var setMaterialNormalDepth = function ( object ) {
 
-		if ( object.userData.normalDepthMaterial ) object.material = object.userData.normalDepthMaterial;
+		if ( object.material === undefined ) return;
+
+		if ( object.userData.normalDepthMaterial ) {
+
+			object.material = object.userData.normalDepthMaterial;
+
+			if ( object.userData.originalMaterial.visible === true ) {
+
+				object.material.visible = ! object.userData.originalMaterial.transparent;
+
+			} else {
+
+				object.material.visible = false;
+
+			}
+
+		}
 
 	};
 
 	var setMaterialColor = function ( object ) {
 
-		if ( object.userData.colorMaterial ) object.material = object.userData.colorMaterial;
+		if ( object.material === undefined ) return;
+
+		if ( object.userData.colorMaterial ) {
+
+			object.material = object.userData.colorMaterial;
+
+			if ( object.userData.originalMaterial.visible === true ) {
+
+				object.material.visible = ! object.userData.originalMaterial.transparent;
+
+			} else {
+
+				object.material.visible = false;
+
+			}
+
+		}
 
 	};
 
-	var saveOriginalMaterial = function ( object ) {
+	var setTransparent = function ( object ) {
 
-		if ( object.material ) object.userData.originalMaterial = object.material;
+		if ( object.material === undefined ) return;
+
+		object.userData.originalVisible = object.material.visible;
+		object.material.visible = object.material.transparent;
+
+	};
+
+	var restoreTransparent = function ( object ) {
+
+		if ( object.material === undefined ) return;
+
+		object.material.visible = object.userData.originalVisible;
+
+	};
+
+	var saveOriginalMaterialAndCheckTransparency = function ( object ) {
+
+		if ( object.material ) {
+
+			object.userData.originalMaterial = object.material;
+
+			if ( object.material.transparent === true ) _hasTransparentObject = true;
+
+		}
 
 	};
 
@@ -376,12 +454,81 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
+	var enableCompositePasses = function () {
+
+		if ( _hasTransparentObject ) {
+
+			if ( _antialias ) {
+
+				_passFinal.renderToScreen = false;
+
+				_passForward.renderToScreen = false;
+				_passForward.enabled = true;
+
+				_passCopy.renderToScreen = false;
+				_passCopy.enabled = false;
+
+				_passFXAA.renderToScreen = true;
+				_passFXAA.enabled = true;
+
+
+			} else {
+
+				_passFinal.renderToScreen = false;
+
+				_passForward.renderToScreen = false;
+				_passForward.enabled = true;
+
+				_passCopy.renderToScreen = true;
+				_passCopy.enabled = true;
+
+				_passFXAA.renderToScreen = false;
+				_passFXAA.enabled = false;
+
+			}
+
+		} else {
+
+			if ( _antialias ) {
+
+				_passFinal.renderToScreen = false;
+
+				_passForward.renderToScreen = false;
+				_passForward.enabled = false;
+
+				_passCopy.renderToScreen = false;
+				_passCopy.enabled = false;
+
+				_passFXAA.renderToScreen = true;
+				_passFXAA.enabled = true;
+
+			} else {
+
+				_passFinal.renderToScreen = true;
+
+				_passForward.renderToScreen = false;
+				_passForward.enabled = false;
+
+				_passCopy.renderToScreen = false;
+				_passCopy.enabled = false;
+
+				_passFXAA.renderToScreen = false;
+				_passFXAA.enabled = false;
+
+			}
+
+		}
+
+	};
+
+	// 1)
+
 	var renderNormalDepth = function ( scene, camera ) {
+
+		scene.traverse( setMaterialNormalDepth );
 
 		_passNormalDepth.scene = scene;
 		_passNormalDepth.camera = camera;
-
-		scene.traverse( setMaterialNormalDepth );
 
 		_this.renderer.autoClearDepth = true;
 		_this.renderer.autoClearStencil = true;
@@ -394,14 +541,16 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
+	// 2)
+
 	var renderColor = function ( scene, camera ) {
+
+		scene.traverse( setMaterialColor );
 
 		_passColor.scene = scene;
 		_passColor.camera = camera;
 
-		scene.traverse( setMaterialColor );
-
-		_this.renderer.autoClearDepth = true;
+		_this.renderer.autoClearDepth = false;
 		_this.renderer.autoClearStencil = false;
 
 		_gl.stencilFunc( _gl.EQUAL, 1, 0xffffffff );
@@ -410,6 +559,8 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_compColor.render();
 
 	};
+
+	// 3)
 
 	var renderLight = function ( scene, camera ) {
 
@@ -446,12 +597,31 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
+	// 4)
+
 	var renderComposite = function ( scene, camera ) {
 
-		_this.renderer.autoClearDepth = true;
-		_this.renderer.autoClearStencil = true;
+		if ( _hasTransparentObject ) {
+
+			scene.traverse( setTransparent );
+
+			_passForward.scene = scene;
+			_passForward.camera = camera;
+
+		}
+
+		enableCompositePasses();
+
+		_this.renderer.autoClearDepth = false;
+		_this.renderer.autoClearStencil = false;
 
 		_compFinal.render();
+
+		if ( _hasTransparentObject ) {
+
+			scene.traverse( restoreTransparent );
+
+		}
 
 	};
 
@@ -479,21 +649,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	this.setAntialias = function ( enabled ) {
 
-		if ( enabled ) {
-
-			_passFXAA.renderToScreen = true;
-			_passFXAA.enabled = true;
-
-			_passFinal.renderToScreen = false;
-
-		} else {
-
-			_passFXAA.renderToScreen = false;
-			_passFXAA.enabled = false;
-
-			_passFinal.renderToScreen = true;
-
-		}
+		_antialias = enabled;
 
 	};
 
@@ -501,18 +657,21 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 		initLightScene( scene );
 
-		scene.traverse( initDeferredProperties );
-		scene.traverse( saveOriginalMaterial );
-
 		scene.autoUpdate = false;
 		scene.updateMatrixWorld();
+
+		_hasTransparentObject = false;
+
+		scene.traverse( initDeferredProperties );
+		scene.traverse( saveOriginalMaterialAndCheckTransparency );
 
 		renderNormalDepth( scene, camera );
 		renderColor( scene, camera );
 		renderLight( scene, camera );
-		renderComposite( scene, camera );
 
 		scene.traverse( restoreOriginalMaterial );
+
+		renderComposite( scene, camera );
 
 	};
 

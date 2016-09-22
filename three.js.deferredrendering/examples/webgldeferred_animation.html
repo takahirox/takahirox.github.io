@@ -155,38 +155,51 @@
 				var size = 100;
 				var geometry = new THREE.PlaneBufferGeometry( size, size );
 				var material = new THREE.MeshPhongMaterial( { color: 0x222222, specular: 0x222222, shininess: 75 } );
+				var transparentMaterial = new THREE.MeshPhongMaterial( { color: 0x222222, emissive: 0x88888888, specular: 0x222222, shininess: 75, opacity: 0.3, transparent: true } );
 
 				var room = new THREE.Object3D();
 				room.position.y = size / 2 - 30;
 
 				// top
-				mesh = new THREE.Mesh( geometry, material );
+				mesh = new THREE.Mesh( geometry, material.clone() );
 				mesh.rotation.x = Math.PI/2;
 				mesh.position.y = size / 2;
 				room.add( mesh );
 
 				// bottom
-				mesh = new THREE.Mesh( geometry, material );
+				mesh = new THREE.Mesh( geometry, material.clone() );
 				mesh.rotation.x = -Math.PI/2;
 				mesh.position.y = -size / 2;
 				room.add( mesh );
 
 				// left
-				mesh = new THREE.Mesh( geometry, material );
+				mesh = new THREE.Mesh( geometry, material.clone() );
 				mesh.position.x = -size / 2;
 				mesh.rotation.y = Math.PI/2;
 				room.add( mesh );
 
 				// right
-				mesh = new THREE.Mesh( geometry, material );
+				mesh = new THREE.Mesh( geometry, material.clone() );
 				mesh.position.x = size / 2;
 				mesh.rotation.y = -Math.PI/2;
 				room.add( mesh );
 
 				// back
-				mesh = new THREE.Mesh( geometry, material );
+				mesh = new THREE.Mesh( geometry, material.clone() );
 				mesh.position.z = -size / 2;
 				room.add( mesh );
+
+				// front, to check if transparency works
+				mesh = new THREE.Mesh( geometry, transparentMaterial.clone() );
+				mesh.position.z = size / 2;
+				mesh.scale.multiplyScalar( 0.33 );
+				//room.add( mesh );
+
+				// back2, to check if transparency works
+				mesh = new THREE.Mesh( geometry, transparentMaterial.clone() );
+				mesh.position.z = -size / 4;
+				mesh.scale.multiplyScalar( 0.75 );
+				//room.add( mesh );
 
 				scene.add( room );
 
