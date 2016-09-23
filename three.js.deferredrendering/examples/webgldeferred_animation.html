@@ -111,13 +111,23 @@
 					var material = materials[ 0 ];
 					material.emissive.set( 0x101010 );
 					material.skinning = true;
+					material.morphTargets = true;
 
 					var mesh = new THREE.SkinnedMesh( geometry, material );
 					mesh.position.y = -30;
 					mesh.scale.multiplyScalar( 5 );
 
 					mixer = new THREE.AnimationMixer( mesh );
-					mixer.clipAction( mesh.geometry.animations[ 0 ] ).play();
+
+					for ( var i = 0; i < mesh.geometry.animations.length; i ++ ) {
+
+						var action = mixer.clipAction( mesh.geometry.animations[ i ] );
+
+						if ( i === 1 ) action.timeScale = 0.25;
+
+						action.play();
+
+					}
 
 					scene.add( mesh );
 
@@ -129,7 +139,7 @@
 
 			function initLights() {
 
-				var distance = 25;
+				var distance = 20;
 
 				var c = new THREE.Vector3();
 				var geometry = new THREE.SphereGeometry( 1, 1, 1 );
@@ -147,6 +157,10 @@
 					light.add( emitter );
 
 				}
+
+				var directionalLight = new THREE.DirectionalLight( 0x101010 );
+				directionalLight.position.set( -1, 1, 1 ).normalize();
+				scene.add( directionalLight );
 
 			}
 
@@ -245,7 +259,7 @@
 			function update() {
 
 				var delta = clock.getDelta();
-				var time = Date.now() * 0.0007;
+				var time = Date.now() * 0.0005;
 
 				mixer.update( delta / 2.0 );
 
