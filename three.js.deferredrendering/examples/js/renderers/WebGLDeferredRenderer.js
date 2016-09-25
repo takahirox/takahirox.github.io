@@ -1,4 +1,6 @@
 /**
+ * @author alteredq / http://alteredqualia.com/
+ * @author MPanknin / http://www.redplant.de/
  * @author takahiro / https://github.com/takahirox
  *
  * Dependencies
@@ -9,19 +11,20 @@
  *  - THREE.FXAAShader
  *
  * TODO
- *  - MultiMaterials
+ *  - reuse existing glsl
  *  - shared material
  *  - shadow
  *  - optimization
  *  - MRT (when it's available on Three.js)
  *  - AmbientLight
  *  - HemisphereLight
- *  - SpotLight
+ *  - PointLight (distance < 0)
  *  - morphNormals
  *  - BumpMap
  *  - ToneMap
  *  - envMap
  *  - wrapAround
+ *  - addEffect
  */
 
 THREE.WebGLDeferredRenderer = function ( parameters ) {
@@ -39,7 +42,11 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 	var _compColor, _compNormalDepth, _compLight, _compFinal;
 	var _passColor, _passNormalDepth, _passLight, _passLightFullscreen, _passFinal, _passForward, _passCopy, _passFXAA;
 
+	var _lightScene, _lightFullscreenScene;
+
 	var _antialias = false, _hasTransparentObject = false;
+
+	var _invisibleMaterial = new THREE.ShaderMaterial( { visible: false } );
 
 	var _tmpVector3 = new THREE.Vector3();
 
@@ -47,6 +54,8 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	this.renderer;
 	this.domElement;
+
+	this.forwardRendering = false;  // for debug
 
 	// private methods
 
@@ -190,17 +199,29 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	var initLightScene = function ( scene ) {
 
-		if ( ! scene.userData.lightScene ) scene.userData.lightScene = new THREE.Scene();
+		if ( scene.userData.lightScene === undefined ) {
 
-		if ( ! scene.userData.lightFullscreenScene ) {
+			var lightScene = new THREE.Scene();
+			lightScene.userData.lights = {};
 
-			scene.userData.lightFullscreenScene = new THREE.Scene();
-			scene.userData.lightFullscreenScene.userData.emissiveLight = createDeferredEmissiveLight();
-			scene.userData.lightFullscreenScene.add( scene.userData.lightFullscreenScene.userData.emissiveLight );
+			scene.userData.lightScene = lightScene;
 
 		}
 
-		_passLightFullscreen.scene = scene.userData.lightFullscreenScene;
+		if ( scene.userData.lightFullscreenScene === undefined ) {
+
+			var lightScene = new THREE.Scene();
+			lightScene.userData.lights = {};
+
+			lightScene.userData.emissiveLight = createDeferredEmissiveLight();
+			lightScene.add( lightScene.userData.emissiveLight );
+
+			scene.userData.lightFullscreenScene = lightScene;
+
+		}
+
+		_lightScene = scene.userData.lightScene;
+		_lightFullscreenScene = scene.userData.lightFullscreenScene;
 
 	};
 
@@ -218,8 +239,32 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	var initDeferredMaterials = function ( object ) {
 
-		object.userData.normalDepthMaterial = createDeferredNormalDepthMaterial( object.material );
-		object.userData.colorMaterial = createDeferredColorMaterial( object.material );
+		if ( object.material instanceof THREE.MultiMaterial ) {
+
+			var normalDepthMaterials = [];
+			var colorMaterials = [];
+			var forwardMaterials = [];
+
+			var materials = object.material.materials;
+
+			for ( var i = 0, il = materials.length; i < il; i ++ ) {
+
+				normalDepthMaterials.push( createDeferredNormalDepthMaterial( materials[ i ] ) );
+				colorMaterials.push( createDeferredColorMaterial( materials[ i ] ) );
+				forwardMaterials.push( _invisibleMaterial );
+
+			}
+
+			object.userData.normalDepthMaterial = new THREE.MultiMaterial( normalDepthMaterials );
+			object.userData.colorMaterial = new THREE.MultiMaterial( colorMaterials );
+			object.userData.forwardMaterial = new THREE.MultiMaterial( forwardMaterials );
+
+		} else {
+
+			object.userData.normalDepthMaterial = createDeferredNormalDepthMaterial( object.material );
+			object.userData.colorMaterial = createDeferredColorMaterial( object.material );
+
+		}
 
 	};
 
@@ -230,15 +275,28 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		var material = new THREE.ShaderMaterial( {
 			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
 			fragmentShader: shader.fragmentShader,
-			vertexShader: shader.vertexShader
+			vertexShader: shader.vertexShader,
+			blending: THREE.NoBlending
 		} );
 
-		material.blending = THREE.NoBlending;
+		return material;
+
+	};
+
+	var updateDeferredNormalDepthMaterial = function ( material, originalMaterial ) {
 
 		if ( originalMaterial.skinning !== undefined ) material.skinning = originalMaterial.skinning;
 		if ( originalMaterial.morphTargets !== undefined ) material.morphTargets = originalMaterial.morphTargets;
 
-		return material;
+		if ( originalMaterial.visible === true ) {
+
+			material.visible = ! originalMaterial.transparent;
+
+		} else {
+
+			material.visible = false;
+
+		}
 
 	};
 
@@ -249,10 +307,17 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		var material = new THREE.ShaderMaterial( {
 			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
 			fragmentShader: shader.fragmentShader,
-			vertexShader: shader.vertexShader
+			vertexShader: shader.vertexShader,
+			blending: THREE.NoBlending
 		} );
 
-		material.blending = THREE.NoBlending;
+		if ( originalMaterial.map !== undefined ) material.map = originalMaterial.map;
+
+		return material;
+
+	};
+
+	var updateDeferredColorMaterial = function ( material, originalMaterial ) {
 
 		var diffuse, emissive;
 
@@ -269,16 +334,55 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 		var specular = originalMaterial.specular;
 		var shininess = originalMaterial.shininess;
+		var map = originalMaterial.map;
+
+		if ( ( originalMaterial instanceof THREE.ShaderMaterial ) && originalMaterial.uniforms !== undefined ) {
+
+			if ( diffuse === undefined && originalMaterial.uniforms.diffuse !== undefined ) diffuse = originalMaterial.uniforms.diffuse.value;
+			if ( emissive === undefined && originalMaterial.uniforms.emissive !== undefined ) emissive = originalMaterial.uniforms.emissive.value;
+			if ( specular === undefined && originalMaterial.uniforms.specular !== undefined ) specular = originalMaterial.uniforms.specular.value;
+			if ( shininess === undefined && originalMaterial.uniforms.shininess !== undefined ) shininess = originalMaterial.uniforms.shininess.value;
+
+		}
 
 		if ( diffuse !== undefined ) material.uniforms.diffuse.value.copy( diffuse );
 		if ( emissive !== undefined ) material.uniforms.emissive.value.copy( emissive );
 		if ( specular !== undefined ) material.uniforms.specular.value.copy( specular );
 		if ( shininess !== undefined ) material.uniforms.shininess.value = shininess;
 
+		if ( map !== undefined ) {
+
+			material.map = map;
+			material.uniforms.map.value = map;
+
+		}
+
 		if ( originalMaterial.skinning !== undefined ) material.skinning = originalMaterial.skinning;
 		if ( originalMaterial.morphTargets !== undefined ) material.morphTargets = originalMaterial.morphTargets;
 
-		return material;
+		if ( originalMaterial.visible === true ) {
+
+			material.visible = ! originalMaterial.transparent;
+
+		} else {
+
+			material.visible = false;
+
+		}
+
+	};
+
+	var getForwardRenderingMaterial = function ( originalMaterial ) {
+
+		if ( originalMaterial.transparent === true && originalMaterial.visible === true ) {
+
+			return originalMaterial
+
+		} else {
+
+			return _invisibleMaterial;
+
+		}
 
 	};
 
@@ -290,6 +394,10 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 			deferredLight = createDeferredPointLight( light );
 
+		} else if ( light instanceof THREE.SpotLight ) {
+
+			deferredLight = createDeferredSpotLight( light );
+
 		} else if ( light instanceof THREE.DirectionalLight ) {
 
 			deferredLight = createDeferredDirectionalLight( light );
@@ -297,99 +405,6 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		}
 
 		light.userData.deferredLight = deferredLight;
-
-	};
-
-	var createDeferredEmissiveLight = function () {
-
-		var shader = THREE.ShaderDeferred[ 'emissiveLight' ];
-
-		var material = new THREE.ShaderMaterial( {
-			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
-			vertexShader: shader.vertexShader,
-			fragmentShader: shader.fragmentShader
-		} );
-
-		material.blending = THREE.NoBlending;
-		material.depthWrite = false;
-
-		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
-
-		var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
-		var mesh = new THREE.Mesh( geometry, material );
-
-		return mesh;
-
-	};
-
-	var createDeferredPointLight = function ( light ) {
-
-		var shader = THREE.ShaderDeferred[ 'pointLight' ];
-
-		var material = new THREE.ShaderMaterial( {
-			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
-			vertexShader: shader.vertexShader,
-			fragmentShader: shader.fragmentShader
-		} );
-
-		material.transparent = true;
-		material.side = THREE.BackSide;
-		material.blending = THREE.AdditiveBlending;
-		material.depthWrite = false;
-		material.depthFunc = THREE.GreaterEqualDepth;
-
-		material.uniforms.samplerNormalDepth.value = _compNormalDepth.renderTarget2.texture;
-		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
-
-		var geometry = new THREE.SphereGeometry( 1, 16, 8 );
-		var mesh = new THREE.Mesh( geometry, material );
-
-		mesh.userData.originalLight = light;
-
-		return mesh;
-
-	};
-
-	var createDeferredDirectionalLight = function ( light ) {
-
-		var shader = THREE.ShaderDeferred[ 'directionalLight' ];
-
-		var material = new THREE.ShaderMaterial( {
-			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
-			vertexShader: shader.vertexShader,
-			fragmentShader: shader.fragmentShader
-		} );
-
-		material.blending = THREE.AdditiveBlending;
-		material.depthWrite = false;
-		material.depthTest = false;
-		material.transparent = true;
-
-		material.uniforms.samplerNormalDepth.value = _compNormalDepth.renderTarget2.texture;
-		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
-
-		var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
-		var mesh = new THREE.Mesh( geometry, material );
-
-		mesh.userData.originalLight = light;
-
-		return mesh;
-
-	};
-
-	var addDeferredLightToScene = function ( light, scene ) {
-
-		var originalLight = light.userData.originalLight;
-
-		if ( originalLight instanceof THREE.PointLight ) {
-
-			scene.userData.lightScene.add( light );
-
-		} else {
-
-			scene.userData.lightFullscreenScene.add( light );
-
-		}
 
 	};
 
@@ -401,11 +416,36 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 			updateDeferredPointLight( light, camera );
 
+		} else if ( originalLight instanceof THREE.SpotLight ) {
+
+			updateDeferredSpotLight( light, camera );
+
 		} else if ( originalLight instanceof THREE.DirectionalLight ) {
 
 			updateDeferredDirectionalLight( light, camera );
 
 		}
+
+	};
+
+	var createDeferredEmissiveLight = function () {
+
+		var shader = THREE.ShaderDeferred[ 'emissiveLight' ];
+
+		var material = new THREE.ShaderMaterial( {
+			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
+			vertexShader: shader.vertexShader,
+			fragmentShader: shader.fragmentShader,
+			blending: THREE.NoBlending,
+			depthWrite: false
+		} );
+
+		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
+
+		var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
+		var mesh = new THREE.Mesh( geometry, material );
+
+		return mesh;
 
 	};
 
@@ -415,6 +455,33 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 		uniforms.viewWidth.value = _width;
 		uniforms.viewHeight.value = _height;
+
+	};
+
+	var createDeferredPointLight = function ( light ) {
+
+		var shader = THREE.ShaderDeferred[ 'pointLight' ];
+
+		var material = new THREE.ShaderMaterial( {
+			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
+			vertexShader: shader.vertexShader,
+			fragmentShader: shader.fragmentShader,
+			transparent: true,
+			side: THREE.BackSide,
+			blending: THREE.AdditiveBlending,
+			depthWrite: false,
+			depthFunc: THREE.GreaterEqualDepth
+		} );
+
+		material.uniforms.samplerNormalDepth.value = _compNormalDepth.renderTarget2.texture;
+		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
+
+		var geometry = new THREE.SphereGeometry( 1, 16, 8 );
+		var mesh = new THREE.Mesh( geometry, material );
+
+		mesh.userData.originalLight = light;
+
+		return mesh;
 
 	};
 
@@ -445,6 +512,80 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
+	var createDeferredSpotLight = function ( light ) {
+
+		var shader = THREE.ShaderDeferred[ 'spotLight' ];
+
+		var material = new THREE.ShaderMaterial( {
+			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
+			vertexShader: shader.vertexShader,
+			fragmentShader: shader.fragmentShader,
+			transparent: true,
+			blending: THREE.AdditiveBlending,
+			depthWrite: false,
+			depthTest: false
+		} );
+
+		material.uniforms.samplerNormalDepth.value = _compNormalDepth.renderTarget2.texture;
+		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
+
+		var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
+		var mesh = new THREE.Mesh( geometry, material );
+
+		mesh.userData.originalLight = light;
+
+		return mesh;
+
+	};
+
+	var updateDeferredSpotLight = function ( light, camera ) {
+
+		var originalLight = light.userData.originalLight;
+		var uniforms = light.material.uniforms;
+
+		uniforms.matProjInverse.value.getInverse( camera.projectionMatrix );
+		uniforms.viewWidth.value = _width;
+		uniforms.viewHeight.value = _height;
+		uniforms.lightAngle.value = originalLight.angle;
+		uniforms.lightColor.value.copy( originalLight.color );
+		uniforms.lightIntensity.value = originalLight.intensity;
+		uniforms.lightPositionVS.value.setFromMatrixPosition( originalLight.matrixWorld ).applyMatrix4( camera.matrixWorldInverse );
+
+		var vec = uniforms.lightDirectionVS.value;
+		var vec2 = _tmpVector3;
+
+		vec.setFromMatrixPosition( originalLight.matrixWorld );
+		vec2.setFromMatrixPosition( originalLight.target.matrixWorld );
+		vec.sub( vec2 ).normalize().transformDirection( camera.matrixWorldInverse );
+
+	};
+
+	var createDeferredDirectionalLight = function ( light ) {
+
+		var shader = THREE.ShaderDeferred[ 'directionalLight' ];
+
+		var material = new THREE.ShaderMaterial( {
+			uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
+			vertexShader: shader.vertexShader,
+			fragmentShader: shader.fragmentShader,
+			transparent: true,
+			blending: THREE.AdditiveBlending,
+			depthWrite: false,
+			depthTest: false
+		} );
+
+		material.uniforms.samplerNormalDepth.value = _compNormalDepth.renderTarget2.texture;
+		material.uniforms.samplerColor.value = _compColor.renderTarget2.texture;
+
+		var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
+		var mesh = new THREE.Mesh( geometry, material );
+
+		mesh.userData.originalLight = light;
+
+		return mesh;
+
+	};
+
 	var updateDeferredDirectionalLight = function ( light, camera ) {
 
 		var originalLight = light.userData.originalLight;
@@ -469,17 +610,21 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 		if ( object.material === undefined ) return;
 
-		if ( object.userData.normalDepthMaterial ) {
+		if ( object.userData.normalDepthMaterial !== undefined ) {
 
 			object.material = object.userData.normalDepthMaterial;
 
-			if ( object.userData.originalMaterial.visible === true ) {
+			if ( object.userData.originalMaterial instanceof THREE.MultiMaterial ) {
 
-				object.material.visible = ! object.userData.originalMaterial.transparent;
+				for ( var i = 0, il = object.userData.originalMaterial.materials.length; i < il; i ++ ) {
+
+					updateDeferredNormalDepthMaterial( object.material.materials[ i ], object.userData.originalMaterial.materials[ i ] );
+
+				}
 
 			} else {
 
-				object.material.visible = false;
+				updateDeferredNormalDepthMaterial( object.material, object.userData.originalMaterial );
 
 			}
 
@@ -491,17 +636,21 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 		if ( object.material === undefined ) return;
 
-		if ( object.userData.colorMaterial ) {
+		if ( object.userData.colorMaterial !== undefined ) {
 
 			object.material = object.userData.colorMaterial;
 
-			if ( object.userData.originalMaterial.visible === true ) {
+			if ( object.userData.originalMaterial instanceof THREE.MultiMaterial ) {
 
-				object.material.visible = ! object.userData.originalMaterial.transparent;
+				for ( var i = 0, il = object.userData.originalMaterial.materials.length; i < il; i ++ ) {
+
+					updateDeferredColorMaterial( object.material.materials[ i ], object.userData.originalMaterial.materials[ i ] );
+
+				}
 
 			} else {
 
-				object.material.visible = false;
+				updateDeferredColorMaterial( object.material, object.userData.originalMaterial );
 
 			}
 
@@ -509,30 +658,47 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
-	var setTransparent = function ( object ) {
+	var setMaterialForwardRendering = function ( object ) {
 
 		if ( object.material === undefined ) return;
 
-		object.userData.originalVisible = object.material.visible;
-		object.material.visible = object.material.transparent;
+		if ( object.userData.originalMaterial instanceof THREE.MultiMaterial ) {
 
-	};
+			object.material = object.userData.forwardMaterial;
 
-	var restoreTransparent = function ( object ) {
+			for ( var i = 0, il = object.userData.originalMaterial.materials.length; i < il; i ++ ) {
 
-		if ( object.material === undefined ) return;
+				object.material.materials[ i ] = getForwardRenderingMaterial( object.userData.originalMaterial.materials[ i ] );
 
-		object.material.visible = object.userData.originalVisible;
+			}
+
+		} else {
+
+			object.material = getForwardRenderingMaterial( object.userData.originalMaterial );
+
+		}
 
 	};
 
 	var saveOriginalMaterialAndCheckTransparency = function ( object ) {
 
-		if ( object.material ) {
+		if ( object.material !== undefined ) {
 
 			object.userData.originalMaterial = object.material;
 
-			if ( object.material.transparent === true ) _hasTransparentObject = true;
+			if ( object.material instanceof THREE.MultiMaterial ) {
+
+				for ( var i = 0, il = object.material.materials.length; i < il; i ++ ) {
+
+					if ( object.material.materials[ i ].transparent === true ) _hasTransparentObject = true;
+
+				}
+
+			} else {
+
+				if ( object.material.transparent === true ) _hasTransparentObject = true;
+
+			}
 
 		}
 
@@ -540,7 +706,7 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	var restoreOriginalMaterial = function ( object ) {
 
-		if ( object.userData.originalMaterial ) object.material = object.userData.originalMaterial;
+		if ( object.userData.originalMaterial !== undefined ) object.material = object.userData.originalMaterial;
 
 	};
 
@@ -611,7 +777,76 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
-	// 1)
+	var addDeferredLightsToLightScene = function ( object ) {
+
+		var light = object.userData.deferredLight;
+
+		if ( light !== undefined ) {
+
+			var originalLight = light.userData.originalLight;
+			var scene;
+
+			if ( originalLight instanceof THREE.PointLight ) {
+
+				scene = _lightScene;
+
+			} else {
+
+				scene = _lightFullscreenScene;
+
+			}
+
+			var lights = scene.userData.lights;
+
+			if ( lights[ light.uuid ] === undefined ) {
+
+				scene.add( light );
+
+				lights[ light.uuid ] = {
+					light: light,
+					found: true
+				};
+
+			}
+
+			lights[ light.uuid ].found = true;
+
+
+		}
+
+	};
+
+	var updateDeferredLightsInLightScene = function ( scene, camera ) {
+
+		var lights = scene.userData.lights;
+		var keys = Object.keys( lights );
+
+		for ( var i = 0, il = keys.length; i < il; i ++ ) {
+
+			var key = keys[ i ];
+
+			if ( lights[ key ].found === false ) {
+
+				scene.remove( lights[ key ].light );
+				delete lights[ key ];
+
+			} else {
+
+				updateDeferredLight( lights[ key ].light, camera );
+				lights[ key ].found = false;
+
+			}
+
+		}
+
+	};
+
+	/*
+	 * 1) g-buffer normal + depth pass
+	 *
+	 * RGB: normal
+	 *   A: depth
+	 */
 
 	var renderNormalDepth = function ( scene, camera ) {
 
@@ -631,7 +866,14 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
-	// 2)
+	/*
+	 * 2) g-buffer color pass
+	 *
+	 * R: diffuse
+	 * G: emissive
+	 * B: specular
+	 * A: shininess
+	 */
 
 	var renderColor = function ( scene, camera ) {
 
@@ -650,31 +892,26 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
-	// 3)
+	/*
+	 * 3) light pass
+	 *
+	 * optimization:
+	 * Here renders PointLight only back face with stencil test.
+	 */
 
 	var renderLight = function ( scene, camera ) {
 
-		updateDeferredEmissiveLight( scene.userData.lightFullscreenScene.userData.emissiveLight, camera );
+		updateDeferredEmissiveLight( _lightFullscreenScene.userData.emissiveLight, camera );
 
-		scene.traverse( function ( object ) {
+		scene.traverse( addDeferredLightsToLightScene );
 
-			if ( object.userData.deferredLight !== undefined ) {
+		updateDeferredLightsInLightScene( _lightScene, camera );
+		updateDeferredLightsInLightScene( _lightFullscreenScene, camera );
 
-				if ( ! object.userData.inLightScene ) {
-
-					addDeferredLightToScene( object.userData.deferredLight, scene );
-					object.userData.inLightScene = true;
-
-				}
-
-				updateDeferredLight( object.userData.deferredLight, camera );
-
-			}
-
-		} );
-
-		_passLight.scene = scene.userData.lightScene;
+		_passLight.scene = _lightScene;
 		_passLight.camera = camera;
+
+		_passLightFullscreen.scene = _lightFullscreenScene;
 
 		_this.renderer.autoClearDepth = false;
 		_this.renderer.autoClearStencil = false;
@@ -685,13 +922,23 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	};
 
-	// 4)
+	/*
+	 * 4) composite pass
+	 *
+	 * transparency handling:
+	 * If there's any transparent objects, here renders them on the deferred rendering result
+	 * with forward rendering. This may be the easist way but heavy.
+	 * We should consider any better ways someday.
+	 *
+	 * antialias handling:
+	 * Here uses postprocessing FXAA for antialias.
+	 */
 
 	var renderComposite = function ( scene, camera ) {
 
 		if ( _hasTransparentObject ) {
 
-			scene.traverse( setTransparent );
+			scene.traverse( setMaterialForwardRendering );
 
 			_passForward.scene = scene;
 			_passForward.camera = camera;
@@ -704,12 +951,6 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		_this.renderer.autoClearStencil = false;
 
 		_compFinal.render();
-
-		if ( _hasTransparentObject ) {
-
-			scene.traverse( restoreTransparent );
-
-		}
 
 	};
 
@@ -743,6 +984,20 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 
 	this.render = function ( scene, camera ) {
 
+		// for debug to compare with normal forward rendering
+
+		if ( this.forwardRendering ) {
+
+			this.renderer.render( scene, camera );
+			return;
+
+		}
+
+		var tmpSceneAutoUpdate = scene.autoUpdate;
+		var tmpAutoClearColor = this.renderer.autoClearColor;
+		var tmpAutoClearDepth = this.renderer.autoClearDepth;
+		var tmpAutoClearStencil = this.renderer.autoClearStencil;
+
 		initLightScene( scene );
 
 		scene.autoUpdate = false;
@@ -756,10 +1011,14 @@ THREE.WebGLDeferredRenderer = function ( parameters ) {
 		renderNormalDepth( scene, camera );
 		renderColor( scene, camera );
 		renderLight( scene, camera );
+		renderComposite( scene, camera );
 
 		scene.traverse( restoreOriginalMaterial );
 
-		renderComposite( scene, camera );
+		scene.autoUpdate = tmpSceneAutoUpdate;
+		this.renderer.autoClearColor = tmpAutoClearColor;
+		this.renderer.autoClearDepth = tmpAutoClearDepth;
+		this.renderer.autoClearStencil = tmpAutoClearStencil;
 
 	};
 
@@ -827,9 +1086,9 @@ THREE.DeferredShaderChunk = {
 	packColor: [
 
 		"vec4 packedColor;",
-		"packedColor.x = vec3_to_float( diffuse );",
-		"packedColor.y = vec3_to_float( emissive );",
-		"packedColor.z = vec3_to_float( specular );",
+		"packedColor.x = vec3_to_float( diffuseColor );",
+		"packedColor.y = vec3_to_float( emissiveColor );",
+		"packedColor.z = vec3_to_float( specularColor );",
 		"packedColor.w = shininess;"
 
 	].join( "\n" ),
@@ -837,9 +1096,9 @@ THREE.DeferredShaderChunk = {
 	unpackColor: [
 
 		"vec4 colorMap = texture2D( samplerColor, texCoord );",
-		"vec3 diffuse = float_to_vec3( colorMap.x );",
-		"vec3 emissive = float_to_vec3( colorMap.y );",
-		"vec3 specular = float_to_vec3( colorMap.z );",
+		"vec3 diffuseColor = float_to_vec3( colorMap.x );",
+		"vec3 emissiveColor = float_to_vec3( colorMap.y );",
+		"vec3 specularColor = float_to_vec3( colorMap.z );",
 		"float shininess = colorMap.w;",
 
 	].join( "\n" ),
@@ -861,14 +1120,14 @@ THREE.DeferredShaderChunk = {
 
 		"float specularNormalization = ( shininess + 2.0001 ) / 8.0;",
 
-		"vec3 schlick = specular + vec3( 1.0 - specular ) * pow( 1.0 - dot( lightVector, halfVector ), 5.0 );",
-		"specular = schlick * max( pow( dotNormalHalf, shininess ), 0.0 ) * diffuse * max( dot( normal, lightVector ), 0.0 ) * specularNormalization;"
+		"vec3 schlick = specularColor + vec3( 1.0 - specularColor ) * pow( 1.0 - dot( lightVector, halfVector ), 5.0 );",
+		"vec3 specular = schlick * max( pow( dotNormalHalf, shininess ), 0.0 ) * diffuseColor * max( dot( normal, lightVector ), 0.0 ) * specularNormalization;"
 
 	].join( "\n" ),
 
 	combine: [
 
-		"gl_FragColor = vec4( lightIntensity * lightColor * ( diffuse * max( dot( normal, lightVector ), 0.0 ) + specular ), attenuation );"
+		"gl_FragColor = vec4( lightIntensity * lightColor * ( diffuseColor * max( dot( normal, lightVector ), 0.0 ) + specular ), attenuation );"
 
 	].join( "\n" )
 
@@ -930,20 +1189,25 @@ THREE.ShaderDeferred = {
 
 		uniforms: {
 
+				map: { type: "t", value: null },
+				offsetRepeat: { type: "v4", value: new THREE.Vector4( 0, 0, 1, 1 ) },
+
 				diffuse: { type: "c", value: new THREE.Color( 0x000000 ) },
 				emissive: { type: "c", value: new THREE.Color( 0x000000 ) },
 				specular: { type: "c", value: new THREE.Color( 0x000000 ) },
-				shininess: { type: "f", value: 30.0 },
+				shininess: { type: "f", value: 30.0 }
 
 		},
 
 		vertexShader: [
 
+			THREE.ShaderChunk[ "uv_pars_vertex" ],
 			THREE.ShaderChunk[ "morphtarget_pars_vertex" ],
 			THREE.ShaderChunk[ "skinning_pars_vertex" ],
 
 			"void main() {",
 
+				THREE.ShaderChunk[ "uv_vertex" ],
 				THREE.ShaderChunk[ "begin_vertex" ],
 				THREE.ShaderChunk[ "beginnormal_vertex" ],
 				THREE.ShaderChunk[ "skinbase_vertex" ],
@@ -964,10 +1228,17 @@ THREE.ShaderDeferred = {
 			"uniform vec3 specular;",
 			"uniform float shininess;",
 
+			THREE.ShaderChunk[ "uv_pars_fragment" ],
+			THREE.ShaderChunk[ "map_pars_fragment" ],
 			THREE.DeferredShaderChunk[ "packVector3" ],
 
 			"void main() {",
 
+				"vec3 diffuseColor = diffuse;",
+				"vec3 emissiveColor = emissive;",
+				"vec3 specularColor = specular;",
+
+				THREE.ShaderChunk[ "map_fragment" ],
 				THREE.DeferredShaderChunk[ "packColor" ],
 
 				"gl_FragColor = packedColor;",
@@ -984,7 +1255,7 @@ THREE.ShaderDeferred = {
 
 			samplerColor: { type: "t", value: null },
 			viewWidth: { type: "f", value: 800 },
-			viewHeight: { type: "f", value: 600 },
+			viewHeight: { type: "f", value: 600 }
 
 		},
 
@@ -1012,7 +1283,7 @@ THREE.ShaderDeferred = {
 				THREE.DeferredShaderChunk[ "computeTextureCoord" ],
 				THREE.DeferredShaderChunk[ "unpackColor" ],
 
-				"gl_FragColor = vec4( emissive, 1.0 );",
+				"gl_FragColor = vec4( emissiveColor, 1.0 );",
 
 			"}"
 
@@ -1033,7 +1304,7 @@ THREE.ShaderDeferred = {
 			viewHeight: { type: "f", value: 600 },
 
 			lightColor: { type: "c", value: new THREE.Color( 0x000000 ) },
-			lightPositionVS : { type: "v3", value: new THREE.Vector3( 0, 1, 0 ) },
+			lightPositionVS: { type: "v3", value: new THREE.Vector3( 0, 1, 0 ) },
 			lightIntensity: { type: "f", value: 1.0 },
 			lightRadius: { type: "f", value: 1.0 }
 
@@ -1082,12 +1353,113 @@ THREE.ShaderDeferred = {
 				THREE.DeferredShaderChunk[ "unpackColor" ],
 				THREE.DeferredShaderChunk[ "computeSpecular" ],
 
-				"float cutoff = 0.3;",
-				"float denom = distance / lightRadius + 1.0;",
-				"float attenuation = 1.0 / ( denom * denom );",
-				"attenuation = ( attenuation - cutoff ) / ( 1.0 - cutoff );",
-				"attenuation = max( attenuation, 0.0 );",
+				"//float cutoff = 0.3;",
+				"//float denom = distance / lightRadius + 1.0;",
+				"//float attenuation = 1.0 / ( denom * denom );",
+				"//attenuation = ( attenuation - cutoff ) / ( 1.0 - cutoff );",
+				"//attenuation = max( attenuation, 0.0 );",
 				"//attenuation *= attenuation;",
+
+				"//diffuseColor *= saturate( -distance / lightRadius + 1.0 );",
+				"//float attenuation = 1.0;",
+
+				"float attenuation = saturate( -distance / lightRadius + 1.0 );",
+
+				THREE.DeferredShaderChunk[ "combine" ],
+
+			"}"
+
+		].join( "\n" )
+
+	},
+
+	spotLight: {
+
+		uniforms: {
+
+			samplerNormalDepth: { type: "t", value: null },
+			samplerColor: { type: "t", value: null },
+
+			matProjInverse: { type: "m4", value: new THREE.Matrix4() },
+
+			viewWidth: { type: "f", value: 800 },
+			viewHeight: { type: "f", value: 600 },
+
+			lightColor: { type: "c", value: new THREE.Color( 0x000000 ) },
+			lightDirectionVS: { type: "v3", value: new THREE.Vector3( 0, 1, 0 ) },
+			lightPositionVS: { type: "v3", value: new THREE.Vector3( 0, 1, 0 ) },
+			lightAngle: { type: "f", value: 1.0 },
+			lightIntensity: { type: "f", value: 1.0 }
+
+		},
+
+		vertexShader: [
+
+			"void main() { ",
+
+				"gl_Position = vec4( sign( position.xy ), 0.0, 1.0 );",
+
+			"}"
+
+		].join( "\n" ),
+
+		fragmentShader: [
+
+			"uniform sampler2D samplerNormalDepth;",
+			"uniform sampler2D samplerColor;",
+
+			"uniform float viewHeight;",
+			"uniform float viewWidth;",
+
+			"uniform vec3 lightColor;",
+			"uniform vec3 lightPositionVS;",
+			"uniform vec3 lightDirectionVS;",
+			"uniform float lightAngle;",
+			"uniform float lightIntensity;",
+
+			"uniform mat4 matProjInverse;",
+
+			THREE.DeferredShaderChunk[ "unpackFloat" ],
+
+			"void main() {",
+
+				THREE.DeferredShaderChunk[ "computeTextureCoord" ],
+				THREE.DeferredShaderChunk[ "unpackNormalDepth" ],
+				THREE.DeferredShaderChunk[ "computeVertexPositionVS" ],
+				THREE.DeferredShaderChunk[ "unpackColor" ],
+
+				"vec3 lightVector = normalize( lightPositionVS.xyz - vertexPositionVS.xyz );",
+
+				"float rho = dot( lightDirectionVS, lightVector );",
+				"float rhoMax = cos( lightAngle * 0.5 );",
+
+				"if ( rho <= rhoMax ) discard;",
+
+				"float theta = rhoMax + 0.0001;",
+				"float phi = rhoMax + 0.05;",
+				"float falloff = 4.0;",
+
+				"float spot = 0.0;",
+
+				"if ( rho >= phi ) {",
+
+					"spot = 1.0;",
+
+				"} else if ( rho <= theta ) {",
+
+					"spot = 0.0;",
+
+				"} else { ",
+
+					"spot = pow( ( rho - theta ) / ( phi - theta ), falloff );",
+
+				"}",
+
+				"diffuseColor *= spot;",
+
+				THREE.DeferredShaderChunk[ "computeSpecular" ],
+
+				"const float attenuation = 1.0;",
 
 				THREE.DeferredShaderChunk[ "combine" ],
 
@@ -1148,7 +1520,7 @@ THREE.ShaderDeferred = {
 				THREE.DeferredShaderChunk[ "computeVertexPositionVS" ],
 				THREE.DeferredShaderChunk[ "unpackColor" ],
 
-				"vec3 lightVector = lightDirectionVS;",
+				"vec3 lightVector = normalize( lightDirectionVS );",
 
 				THREE.DeferredShaderChunk[ "computeSpecular" ],
 
@@ -1166,7 +1538,7 @@ THREE.ShaderDeferred = {
 
 		uniforms: {
 
-			samplerLight: { type: "t", value: null },
+			samplerLight: { type: "t", value: null }
 
 		},
 

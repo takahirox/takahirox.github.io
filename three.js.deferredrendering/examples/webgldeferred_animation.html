@@ -74,7 +74,6 @@
 			function init() {
 
 				renderer = new THREE.WebGLDeferredRenderer();
-				//renderer = new THREE.WebGLRenderer();
 				renderer.setSize( WIDTH, HEIGHT );
 
 				camera = new THREE.PerspectiveCamera( VIEW_ANGLE, WIDTH / HEIGHT, NEAR, FAR );
@@ -162,6 +161,10 @@
 				directionalLight.position.set( -1, 1, 1 ).normalize();
 				scene.add( directionalLight );
 
+				var spotLight = new THREE.SpotLight( 0x404040 );
+				spotLight.position.set( 0, 50, 0 );
+				scene.add( spotLight );
+
 			}
 
 			function initRoom() {
@@ -175,42 +178,42 @@
 				room.position.y = size / 2 - 30;
 
 				// top
-				mesh = new THREE.Mesh( geometry, material.clone() );
+				mesh = new THREE.Mesh( geometry, material );
 				mesh.rotation.x = Math.PI/2;
 				mesh.position.y = size / 2;
 				room.add( mesh );
 
 				// bottom
-				mesh = new THREE.Mesh( geometry, material.clone() );
+				mesh = new THREE.Mesh( geometry, material );
 				mesh.rotation.x = -Math.PI/2;
 				mesh.position.y = -size / 2;
 				room.add( mesh );
 
 				// left
-				mesh = new THREE.Mesh( geometry, material.clone() );
+				mesh = new THREE.Mesh( geometry, material );
 				mesh.position.x = -size / 2;
 				mesh.rotation.y = Math.PI/2;
 				room.add( mesh );
 
 				// right
-				mesh = new THREE.Mesh( geometry, material.clone() );
+				mesh = new THREE.Mesh( geometry, material );
 				mesh.position.x = size / 2;
 				mesh.rotation.y = -Math.PI/2;
 				room.add( mesh );
 
 				// back
-				mesh = new THREE.Mesh( geometry, material.clone() );
+				mesh = new THREE.Mesh( geometry, material );
 				mesh.position.z = -size / 2;
 				room.add( mesh );
 
 				// front, to check if transparency works
-				mesh = new THREE.Mesh( geometry, transparentMaterial.clone() );
+				mesh = new THREE.Mesh( geometry, transparentMaterial );
 				mesh.position.z = size / 2;
 				mesh.scale.multiplyScalar( 0.33 );
 				//room.add( mesh );
 
 				// back2, to check if transparency works
-				mesh = new THREE.Mesh( geometry, transparentMaterial.clone() );
+				mesh = new THREE.Mesh( geometry, transparentMaterial );
 				mesh.position.z = -size / 4;
 				mesh.scale.multiplyScalar( 0.75 );
 				//room.add( mesh );
