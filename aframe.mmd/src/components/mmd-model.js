@@ -15,7 +15,11 @@ module.exports.Component = registerComponent('mmd-model', {
   init: function () {
     this.model = null;
     this.loader = new THREE.MMDLoader();
-    this.helper = new THREE.MMDHelper({autoClear: true, autoClearColor: true, autoClearDepth: false});
+    this.helper = new THREE.MMDHelper({
+      autoClear: true,
+      autoClearColor: true,
+      autoClearDepth: false
+    });
   },
 
   update: function () {
@@ -35,8 +39,7 @@ module.exports.Component = registerComponent('mmd-model', {
     var el = this.el;
     var loader = this.loader;
     var helper = this.helper;
-    var texturePath = objUrl.slice(0, objUrl.lastIndexOf('/')) + '/../default/';
-    loader.setDefaultTexturePath(texturePath);
+    loader.setDefaultTexturePath('https://threejs.org/examples/models/mmd/default/');
 
     loader.loadModel(objUrl, function (model) {
       self.model = model;
@@ -69,12 +72,6 @@ module.exports.Component = registerComponent('mmd-model', {
   tick: function (time, delta) {
     if(this.model) {
       this.helper.animate(delta/1000.0);
-    }
-  },
-
-  finalize: function () {
-    if(this.model) {
-      this.helper.restoreBones(this.model);
     }
   }
 });
