@@ -10,6 +10,8 @@ var files = {
 		"webgl_clipping",
 		"webgl_clipping_advanced",
 		"webgl_decals",
+		"webgl_deferred_animation",
+		"webgl_deferred_lpp",
 		"webgl_depth_texture",
 		"webgl_effects_anaglyph",
 		"webgl_effects_parallaxbarrier",
