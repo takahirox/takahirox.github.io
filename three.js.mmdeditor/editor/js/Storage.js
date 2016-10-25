@@ -69,7 +69,6 @@ var Storage = function () {
 
 			var transaction = database.transaction( [ 'states' ], 'readwrite' );
 			var objectStore = transaction.objectStore( 'states' );
-			//console.log(data);
 			var request = objectStore.put( data, 0 );
 			request.onsuccess = function ( event ) {
 
@@ -80,6 +79,8 @@ var Storage = function () {
 		},
 
 		clear: function () {
+
+			if ( database === undefined ) return;
 
 			var transaction = database.transaction( [ 'states' ], 'readwrite' );
 			var objectStore = transaction.objectStore( 'states' );

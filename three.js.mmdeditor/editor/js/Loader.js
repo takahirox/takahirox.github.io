@@ -155,6 +155,26 @@ var Loader = function ( editor ) {
 
 				break;
 
+				case 'gltf':
+
+					reader.addEventListener( 'load', function ( event ) {
+
+						var contents = event.target.result;
+						var json = JSON.parse( contents );
+
+						var loader = new THREE.GLTFLoader();
+						loader.parse( json, function ( result ) {
+
+							result.scene.name = filename;
+							editor.execute( new AddObjectCommand( result.scene ) );
+
+						} );
+
+					}, false );
+					reader.readAsText( file );
+
+					break;
+
 			case 'js':
 			case 'json':
 
@@ -303,36 +323,6 @@ var Loader = function ( editor ) {
 
 				}, false );
 				reader.readAsText( file );
-
-				break;
-
-			case 'pmd':
-
-				var reader = new FileReader();
-				reader.addEventListener( 'load', function ( event ) {
-
-					var contents = event.target.result;
-
-					var loader = new THREE.MMDLoader();
-					loader.setDefaultTexturePath( '../examples/models/mmd/default/' );
-					object = loader.createModel( contents, extension, '../examples/models/mmd/miku/' /*loader.extractUrlBase( filename )*/ );
-
-					var bones = object.skeleton.bones;
-					var bones2 = object.geometry.bones;
-					for ( var i = 0; i < bones.length; i++ ) {
-
-						bones[ i ].name = bones[ i ].originalName;
-						bones2[ i ].name = bones2[ i ].originalName;
-
-					}
-
-					object.name = filename;
-
-					editor.addObject( object );
-					editor.select( object );
-
-				}, false );
-				reader.readAsArrayBuffer( file );
 
 				break;
 
@@ -500,9 +490,25 @@ var Loader = function ( editor ) {
 
 				var mesh;
 
-				if ( geometry.animation && geometry.animation.hierarchy ) {
+				if ( geometry.bones !== undefined ) {
 
 					mesh = new THREE.SkinnedMesh( geometry, material );
+
+					if ( material.isMultiMaterial === true ) {
+
+						for ( var i = 0, il = material.materials.length; i < il; i ++ ) {
+
+							material.materials[ i ].skinning = true;
+							material.materials[ i ].morphTargets = true;
+
+						}
+
+					} else {
+
+						material.skinning = true;
+						material.morphTargets = true;
+
+					}
 
 				} else {
 

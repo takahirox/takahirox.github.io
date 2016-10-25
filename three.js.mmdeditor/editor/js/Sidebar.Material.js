@@ -11,6 +11,39 @@ Sidebar.Material = function ( editor ) {
 	container.setBorderTop( '0' );
 	container.setPaddingTop( '20px' );
 
+	// New / Copy / Paste
+
+	var copiedMaterial;
+	var managerRow = new UI.Row();
+
+	managerRow.add( new UI.Text( '' ).setWidth( '90px' ) );
+	managerRow.add( new UI.Button( 'New' ).onClick( function () {
+
+		var material = new THREE[ materialClass.getValue() ]();
+		editor.execute( new SetMaterialCommand( currentObject, material ), 'New Material: ' + materialClass.getValue() );
+		update();
+
+	} ) );
+
+	managerRow.add( new UI.Button( 'Copy' ).onClick( function () {
+
+		copiedMaterial = currentObject.material;
+
+	} ) );
+
+	managerRow.add( new UI.Button( 'Paste' ).onClick( function () {
+
+		if ( copiedMaterial === undefined ) return;
+
+		editor.execute( new SetMaterialCommand( currentObject, copiedMaterial ), 'Pasted Material: ' + materialClass.getValue() );
+		refreshUI();
+		update();
+
+	} ) );
+
+	container.add( managerRow );
+
+
 	// type
 
 	var materialClassRow = new UI.Row();
@@ -651,12 +684,6 @@ Sidebar.Material = function ( editor ) {
 
 					}
 
-					if ( material.displacementScale !== materialDisplacementScale.getValue() ) {
-
-						editor.execute( new SetMaterialValueCommand( currentObject, 'displacementScale', materialDisplacementScale.getValue() ) );
-
-					}
-
 				} else {
 
 					if ( roughnessMapEnabled ) textureWarning = true;
@@ -675,12 +702,6 @@ Sidebar.Material = function ( editor ) {
 					if ( material.metalnessMap !== metalnessMap ) {
 
 						editor.execute( new SetMaterialMapCommand( currentObject, 'metalnessMap', metalnessMap ) );
-
-					}
-
-					if ( material.displacementScale !== materialDisplacementScale.getValue() ) {
-
-						editor.execute( new SetMaterialValueCommand( currentObject, 'displacementScale', materialDisplacementScale.getValue() ) );
 
 					}
 
@@ -725,9 +746,15 @@ Sidebar.Material = function ( editor ) {
 
 				}
 
-				if ( material.reflectivity !== materialReflectivity.getValue() ) {
+			}
 
-					editor.execute( new SetMaterialValueCommand( currentObject, 'reflectivity', materialReflectivity.getValue() ) );
+			if ( material.reflectivity !== undefined ) {
+
+				var reflectivity = materialReflectivity.getValue();
+
+				if ( material.reflectivity !== reflectivity ) {
+
+					editor.execute( new SetMaterialValueCommand( currentObject, 'reflectivity', reflectivity ) );
 
 				}
 
@@ -866,9 +893,7 @@ Sidebar.Material = function ( editor ) {
 
 			}
 
-			refreshUI( false );
-
-			signals.materialChanged.dispatch( material );
+			refreshUI();
 
 		}
 
@@ -1104,6 +1129,10 @@ Sidebar.Material = function ( editor ) {
 				materialEnvMap.setValue( material.envMap );
 
 			}
+
+		}
+
+		if ( material.reflectivity !== undefined ) {
 
 			materialReflectivity.setValue( material.reflectivity );
 

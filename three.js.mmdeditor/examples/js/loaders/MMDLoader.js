@@ -3,7 +3,11 @@
  *
  * Dependencies
  *  - charset-encoder-js https://github.com/takahirox/charset-encoder-js
+ *  - ammo.js https://github.com/kripken/ammo.js
  *  - THREE.TGALoader
+ *  - THREE.MMDPhysics
+ *  - THREE.CCDIKSolver
+ *  - THREE.OutlineEffect
  *
  *
  * This loader loads and parses PMD/PMX and VMD binary files
@@ -29,13 +33,13 @@
  *  - light motion in vmd support.
  *  - SDEF support.
  *  - uv/material/bone morphing support.
- *  - supply skinning support.
+ *  - more precise grant skinning support.
  *  - shadow support.
  */
 
-THREE.MMDLoader = function ( showStatus, manager ) {
+THREE.MMDLoader = function ( manager ) {
 
-	THREE.Loader.call( this, showStatus );
+	THREE.Loader.call( this );
 	this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 	this.defaultTexturePath = './models/default/';
 
@@ -136,29 +140,14 @@ THREE.MMDLoader.prototype.loadAudio = function ( url, callback, onProgress, onEr
 
 	var listener = new THREE.AudioListener();
 	var audio = new THREE.Audio( listener );
+	var loader = new THREE.AudioLoader( this.manager );
 
-	audio.load( url );
+	loader.load( url, function ( buffer ) {
 
-	/*
-	 * Note: THREE.Audio doesn't support onReady callback
-	 *       so doing polling instead.
-	 * TODO: discuss if THREE.Audio.load() should support callback.
-	 */
-	function polling ( buffer ) {
+		audio.setBuffer( buffer );
+		callback( audio, listener );
 
-		if ( audio.source.buffer === null ) {
-
-			setTimeout( polling, 0 );
-
-		} else {
-
-			callback( audio, listener );
-
-		}
-
-	};
-
-	setTimeout( polling, 0 );
+	}, onProgress, onError );
 
 };
 
@@ -471,7 +460,7 @@ THREE.MMDLoader.prototype.parsePmd = function ( buffer ) {
 			p.toonIndex = dv.getInt8();
 			p.edgeFlag = dv.getUint8();
 			p.faceCount = dv.getUint32() / 3;
-			p.fileName = dv.getChars( 20 );
+			p.fileName = dv.getSjisStringsAsUnicode( 20 );
 			return p;
 
 		};
@@ -494,10 +483,7 @@ THREE.MMDLoader.prototype.parsePmd = function ( buffer ) {
 		var parseBone = function () {
 
 			var p = {};
-			// Skinning animation doesn't work when bone name is Japanese Unicode in r73.
-			// So using charcode strings as workaround and keep original strings in .originalName.
-			p.originalName = dv.getSjisStringsAsUnicode( 20 );
-			p.name = helper.toCharcodeStrings( p.originalName );
+			p.name = dv.getSjisStringsAsUnicode( 20 );
 			p.parentIndex = dv.getInt16();
 			p.tailIndex = dv.getInt16();
 			p.type = dv.getUint8();
@@ -943,7 +929,7 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 
 			p.type = dv.getUint8();
 
-			var indexSize = metadata.vertexIndexSize;
+			var indexSize = metadata.boneIndexSize;
 
 			if ( p.type === 0 ) {  // BDEF1
 
@@ -1004,7 +990,7 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 		var parseFace = function () {
 
 			var p = {};
-			p.indices = dv.getIndexArray( metadata.vertexIndexSize, 3 );
+			p.indices = dv.getIndexArray( metadata.vertexIndexSize, 3, true );
 			return p;
 
 		};
@@ -1100,10 +1086,7 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 		var parseBone = function () {
 
 			var p = {};
-			// Skinning animation doesn't work when bone name is Japanese Unicode in r73.
-			// So using charcode strings as workaround and keep original strings in .originalName.
-			p.originalName = dv.getTextBuffer();
-			p.name = helper.toCharcodeStrings( p.originalName );
+			p.name = dv.getTextBuffer();
 			p.englishName = dv.getTextBuffer();
 			p.position = dv.getFloat32Array( 3 );
 			p.parentIndex = dv.getIndex( pmx.metadata.boneIndexSize );
@@ -1122,8 +1105,19 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 
 			if ( p.flag & 0x100 || p.flag & 0x200 ) {
 
-				p.supplyParentIndex = dv.getIndex( pmx.metadata.boneIndexSize );
-				p.supplyRatio = dv.getFloat32();
+				// Note: I don't think Grant is an appropriate name
+				//       but I found that some English translated MMD tools use this term
+				//       so I've named it Grant so far.
+				//       I'd rename to more appropriate name from Grant later.
+				var grant = {};
+
+				grant.isLocal = ( p.flag & 0x80 ) !== 0 ? true : false;
+				grant.affectRotation = ( p.flag & 0x100 ) !== 0 ? true : false;
+				grant.affectPosition = ( p.flag & 0x200 ) !== 0 ? true : false;
+				grant.parentIndex = dv.getIndex( pmx.metadata.boneIndexSize );
+				grant.ratio = dv.getFloat32();
+
+				p.grant = grant;
 
 			}
 
@@ -1218,7 +1212,7 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 				} else if ( p.type === 1 ) {  // vertex morph
 
 					var m = {};
-					m.index = dv.getIndex( pmx.metadata.vertexIndexSize );
+					m.index = dv.getIndex( pmx.metadata.vertexIndexSize, true );
 					m.position = dv.getFloat32Array( 3 );
 					p.elements.push( m );
 
@@ -1233,9 +1227,25 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 				} else if ( p.type === 3 ) {  // uv morph
 
 					var m = {};
-					m.index = dv.getIndex( pmx.metadata.vertexIndexSize );
+					m.index = dv.getIndex( pmx.metadata.vertexIndexSize, true );
 					m.uv = dv.getFloat32Array( 4 );
 					p.elements.push( m );
+
+				} else if ( p.type === 4 ) {  // additional uv1
+
+					// TODO: implement
+
+				} else if ( p.type === 5 ) {  // additional uv2
+
+					// TODO: implement
+
+				} else if ( p.type === 6 ) {  // additional uv3
+
+					// TODO: implement
+
+				} else if ( p.type === 7 ) {  // additional uv4
+
+					// TODO: implement
 
 				} else if ( p.type === 8 ) {  // material morph
 
@@ -1271,7 +1281,6 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 			pmx.morphs.push( parseMorph() );
 
 		}
-
 
 	};
 
@@ -1433,10 +1442,7 @@ THREE.MMDLoader.prototype.parseVmd = function ( buffer ) {
 		var parseMotion = function () {
 
 			var p = {};
-			// Skinning animation doesn't work when bone name is Japanese Unicode in r73.
-			// So using charcode strings as workaround and keep original strings in .originalName.
-			p.originalBoneName = dv.getSjisStringsAsUnicode( 15 );
-			p.boneName = helper.toCharcodeStrings( p.originalBoneName );
+			p.boneName = dv.getSjisStringsAsUnicode( 15 );
 			p.frameNum = dv.getUint32();
 			p.position = dv.getFloat32Array( 3 );
 			p.rotation = dv.getFloat32Array( 4 );
@@ -1654,8 +1660,7 @@ THREE.MMDLoader.prototype.parseVpd = function ( text ) {
 
 				bones.push( {
 
-					originalName: n,
-					name: helper.toCharcodeStrings( n ),
+					name: n,
 					translation: v,
 					quaternion: q
 
@@ -1692,9 +1697,18 @@ THREE.MMDLoader.prototype.parseVpd = function ( text ) {
 THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress, onError ) {
 
 	var scope = this;
-	var geometry = new THREE.Geometry();
-        var material = new THREE.MultiMaterial();
+	var geometry = new THREE.BufferGeometry();
+	var material = new THREE.MultiMaterial();
 	var helper = new THREE.MMDLoader.DataCreationHelper();
+
+	var buffer = {};
+
+	buffer.vertices = [];
+	buffer.uvs = [];
+	buffer.normals = [];
+	buffer.skinIndices = [];
+	buffer.skinWeights = [];
+	buffer.indices = [];
 
 	var initVartices = function () {
 
@@ -1702,31 +1716,35 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 			var v = model.vertices[ i ];
 
-			geometry.vertices.push(
-				new THREE.Vector3(
-					v.position[ 0 ],
-					v.position[ 1 ],
-					v.position[ 2 ]
-				)
-			);
+			for ( var j = 0, jl = v.position.length; j < jl; j ++ ) {
 
-			geometry.skinIndices.push(
-				new THREE.Vector4(
-					v.skinIndices.length >= 1 ? v.skinIndices[ 0 ] : 0.0,
-					v.skinIndices.length >= 2 ? v.skinIndices[ 1 ] : 0.0,
-					v.skinIndices.length >= 3 ? v.skinIndices[ 2 ] : 0.0,
-					v.skinIndices.length >= 4 ? v.skinIndices[ 3 ] : 0.0
-				)
-			);
+				buffer.vertices.push( v.position[ j ] );
 
-			geometry.skinWeights.push(
-				new THREE.Vector4(
-					v.skinWeights.length >= 1 ? v.skinWeights[ 0 ] : 0.0,
-					v.skinWeights.length >= 2 ? v.skinWeights[ 1 ] : 0.0,
-					v.skinWeights.length >= 3 ? v.skinWeights[ 2 ] : 0.0,
-					v.skinWeights.length >= 4 ? v.skinWeights[ 3 ] : 0.0
-				)
-			);
+			}
+
+			for ( var j = 0, jl = v.normal.length; j < jl; j ++ ) {
+
+				buffer.normals.push( v.normal[ j ] );
+
+			}
+
+			for ( var j = 0, jl = v.uv.length; j < jl; j ++ ) {
+
+				buffer.uvs.push( v.uv[ j ] );
+
+			}
+
+			for ( var j = 0; j < 4; j ++ ) {
+
+				buffer.skinIndices.push( v.skinIndices.length - 1 >= j ? v.skinIndices[ j ] : 0.0 );
+
+			}
+
+			for ( var j = 0; j < 4; j ++ ) {
+
+				buffer.skinWeights.push( v.skinWeights.length - 1 >= j ? v.skinWeights[ j ] : 0.0 );
+
+			}
 
 		}
 
@@ -1736,22 +1754,11 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 		for ( var i = 0; i < model.metadata.faceCount; i++ ) {
 
-			geometry.faces.push(
-				new THREE.Face3(
-					model.faces[ i ].indices[ 0 ],
-					model.faces[ i ].indices[ 1 ],
-					model.faces[ i ].indices[ 2 ]
-				)
-			);
+			var f = model.faces[ i ];
 
-			for ( var j = 0; j < 3; j++ ) {
+			for ( var j = 0, jl = f.indices.length; j < jl; j ++ ) {
 
-				geometry.faces[ i ].vertexNormals[ j ] =
-					new THREE.Vector3(
-						model.vertices[ model.faces[ i ].indices[ j ] ].normal[ 0 ],
-						model.vertices[ model.faces[ i ].indices[ j ] ].normal[ 1 ],
-						model.vertices[ model.faces[ i ].indices[ j ] ].normal[ 2 ]
-					);
+				buffer.indices.push( f.indices[ j ] );
 
 			}
 
@@ -1813,9 +1820,7 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 					var link = {};
 					link.index = ik.links[ j ].index;
 
-					// Checking with .originalName, not .name.
-					// See parseBone() for the detail.
-					if ( model.bones[ link.index ].originalName.indexOf( 'ひざ' ) >= 0 ) {
+					if ( model.bones[ link.index ].name.indexOf( 'ひざ' ) >= 0 ) {
 
 						link.limitation = new THREE.Vector3( 1.0, 0.0, 0.0 );
 
@@ -1878,17 +1883,55 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 	};
 
+	var initGrants = function () {
+
+		if ( model.metadata.format === 'pmd' ) {
+
+			return;
+
+		}
+
+		var grants = [];
+
+		for ( var i = 0; i < model.metadata.boneCount; i++ ) {
+
+			var b = model.bones[ i ];
+			var grant = b.grant;
+
+			if ( grant === undefined ) {
+
+				continue;
+
+			}
+
+			var param = {};
+
+			param.index = i;
+			param.parentIndex = grant.parentIndex;
+			param.ratio = grant.ratio;
+			param.isLocal = grant.isLocal;
+			param.affectRotation = grant.affectRotation;
+			param.affectPosition = grant.affectPosition;
+
+			grants.push( param );
+
+		}
+
+		geometry.grants = grants;
+
+	};
+
 	var initMorphs = function () {
 
-		function updateVertex ( params, index, v, ratio ) {
+		function updateVertex( attribute, index, v, ratio ) {
 
-			params.vertices[ index ].x += v.position[ 0 ] * ratio;
-			params.vertices[ index ].y += v.position[ 1 ] * ratio;
-			params.vertices[ index ].z += v.position[ 2 ] * ratio;
+			attribute.array[ index * 3 + 0 ] += v.position[ 0 ] * ratio;
+			attribute.array[ index * 3 + 1 ] += v.position[ 1 ] * ratio;
+			attribute.array[ index * 3 + 2 ] += v.position[ 2 ] * ratio;
 
 		};
 
-		function updateVertices ( params, m, ratio ) {
+		function updateVertices( attribute, m, ratio ) {
 
 			for ( var i = 0; i < m.elementCount; i++ ) {
 
@@ -1906,26 +1949,25 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 				}
 
-				updateVertex( params, index, v, ratio );
+				updateVertex( attribute, index, v, ratio );
 
 			}
 
 		};
 
+		var morphTargets = [];
+		var attributes = [];
+
 		for ( var i = 0; i < model.metadata.morphCount; i++ ) {
 
 			var m = model.morphs[ i ];
-			var params = {};
+			var params = { name: m.name };
 
-			params.name = m.name;
-			params.vertices = [];
+			var attribute = new THREE.Float32Attribute( model.metadata.vertexCount * 3, 3 );
 
-			for ( var j = 0; j < model.metadata.vertexCount; j++ ) {
+			for ( var j = 0; j < model.metadata.vertexCount * 3; j++ ) {
 
-				params.vertices[ j ] = new THREE.Vector3( 0, 0, 0 );
-				params.vertices[ j ].x = geometry.vertices[ j ].x;
-				params.vertices[ j ].y = geometry.vertices[ j ].y;
-				params.vertices[ j ].z = geometry.vertices[ j ].z;
+				attribute.array[ j ] = buffer.vertices[ j ];
 
 			}
 
@@ -1933,13 +1975,13 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 				if ( i !== 0 ) {
 
-					updateVertices( params, m, 1.0 );
+					updateVertices( attribute, m, 1.0 );
 
 				}
 
 			} else {
 
-				if ( m.type === 0 ) {
+				if ( m.type === 0 ) {    // group
 
 					for ( var j = 0; j < m.elementCount; j++ ) {
 
@@ -1948,24 +1990,59 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 						if ( m2.type === 1 ) {
 
-							updateVertices( params, m2, ratio );
+							updateVertices( attribute, m2, ratio );
+
+						} else {
+
+							// TODO: implement
 
 						}
 
 					}
 
-				} else if ( m.type === 1 ) {
+				} else if ( m.type === 1 ) {    // vertex
 
-					updateVertices( params, m, 1.0 );
+					updateVertices( attribute, m, 1.0 );
+
+				} else if ( m.type === 2 ) {    // bone
+
+					// TODO: implement
+
+				} else if ( m.type === 3 ) {    // uv
+
+					// TODO: implement
+
+				} else if ( m.type === 4 ) {    // additional uv1
+
+					// TODO: implement
+
+				} else if ( m.type === 5 ) {    // additional uv2
+
+					// TODO: implement
+
+				} else if ( m.type === 6 ) {    // additional uv3
+
+					// TODO: implement
+
+				} else if ( m.type === 7 ) {    // additional uv4
+
+					// TODO: implement
+
+				} else if ( m.type === 8 ) {    // material
+
+					// TODO: implement
 
 				}
 
 			}
 
-			// TODO: skip if this's non-vertex morphing of PMX to reduce CPU/Memory use
-			geometry.morphTargets.push( params );
+			morphTargets.push( params );
+			attributes.push( attribute );
 
 		}
+
+		geometry.morphTargets = morphTargets;
+		geometry.morphAttributes.position = attributes;
 
 	};
 
@@ -1974,7 +2051,6 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 		var textures = [];
 		var textureLoader = new THREE.TextureLoader( this.manager );
 		var tgaLoader = new THREE.TGALoader( this.manager );
-		var materialLoader = new THREE.MaterialLoader( this.manager );
 		var color = new THREE.Color();
 		var offset = 0;
 		var materialParams = [];
@@ -2030,48 +2106,32 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 		};
 
-		for ( var i = 0; i < model.metadata.materialCount; i++ ) {
+		function getTexture( name, textures ) {
 
-			geometry.faceVertexUvs.push( [] );
+			if ( textures[ name ] === undefined ) {
 
-		}
+				console.warn( 'THREE.MMDLoader: Undefined texture', name );
+
+			}
+
+			return textures[ name ];
+
+		};
 
 		for ( var i = 0; i < model.metadata.materialCount; i++ ) {
 
 			var m = model.materials[ i ];
-			var params = {
-
-				uuid: THREE.Math.generateUUID(),
-				type: 'MMDMaterial'
-
-			};
+			var params = {};
 
 			params.faceOffset = offset;
 			params.faceNum = m.faceCount;
 
-			for ( var j = 0; j < m.faceCount; j++ ) {
-
-				geometry.faces[ offset ].materialIndex = i;
-
-				var uvs = [];
-
-				for ( var k = 0; k < 3; k++ ) {
-
-					var v = model.vertices[ model.faces[ offset ].indices[ k ] ];
-					uvs.push( new THREE.Vector2( v.uv[ 0 ], v.uv[ 1 ] ) );
-
-				}
-
-				geometry.faceVertexUvs[ 0 ].push( uvs );
-
-				offset++;
-
-			}
+			offset += m.faceCount;
 
 			params.name = m.name;
-			params.color = color.fromArray( [ m.diffuse[ 0 ], m.diffuse[ 1 ], m.diffuse[ 2 ] ] ).getHex();
+			params.color = color.fromArray( [ m.diffuse[ 0 ], m.diffuse[ 1 ], m.diffuse[ 2 ] ] ).clone();
 			params.opacity = m.diffuse[ 3 ];
-			params.specular = color.fromArray( [ m.specular[ 0 ], m.specular[ 1 ], m.specular[ 2 ] ] ).getHex();
+			params.specular = color.fromArray( [ m.specular[ 0 ], m.specular[ 1 ], m.specular[ 2 ] ] ).clone();
 			params.shininess = m.shininess;
 
 			if ( params.opacity === 1.0 ) {
@@ -2166,33 +2226,36 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 			// TODO: check if this logic is right
 			if ( params.map === undefined /* && params.envMap === undefined */ ) {
 
-				params.emissive = color.fromArray( [ m.emissive[ 0 ], m.emissive[ 1 ], m.emissive[ 2 ] ] ).getHex();
+				params.emissive = color.fromArray( [ m.emissive[ 0 ], m.emissive[ 1 ], m.emissive[ 2 ] ] ).clone();
 
 			}
-
-			var shader = THREE.ShaderLib[ 'mmd' ];
-			params.uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-			params.vertexShader = shader.vertexShader;
-			params.fragmentShader = shader.fragmentShader;
 
 			materialParams.push( params );
 
 		}
 
-		materialLoader.setTextures( textures );
+		var shader = THREE.ShaderLib[ 'mmd' ];
 
 		for ( var i = 0; i < materialParams.length; i++ ) {
 
 			var p = materialParams[ i ];
 			var p2 = model.materials[ i ];
-			var m = materialLoader.parse( p );
+			var m = new THREE.ShaderMaterial( {
+				uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
+				vertexShader: shader.vertexShader,
+				fragmentShader: shader.fragmentShader
+			} );
 
-			m.faceOffset = p.faceOffset;
-			m.faceNum = p.faceNum;
+			geometry.addGroup( p.faceOffset * 3, p.faceNum * 3, i );
+
+			if ( p.name !== undefined ) m.name = p.name;
 
 			m.skinning = geometry.bones.length > 0 ? true : false;
 			m.morphTargets = geometry.morphTargets.length > 0 ? true : false;
 			m.lights = true;
+			m.side = p.side;
+			m.transparent = p.transparent;
+			m.fog = true;
 
 			m.blending = THREE.CustomBlending;
 			m.blendSrc = THREE.SrcAlphaFactor;
@@ -2200,7 +2263,10 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 			m.blendSrcAlpha = THREE.SrcAlphaFactor;
 			m.blendDstAlpha = THREE.DstAlphaFactor;
 
-			if ( m.map !== null ) {
+			if ( p.map !== undefined ) {
+
+				m.faceOffset = p.faceOffset;
+				m.faceNum = p.faceNum;
 
 				// Check if this part of the texture image the material uses requires transparency
 				function checkTextureTransparency ( m ) {
@@ -2221,7 +2287,7 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 						};
 
-						function detectTextureTransparency ( image, uvs ) {
+						function detectTextureTransparency( image, uvs, indices ) {
 
 							var width = image.width;
 							var height = image.height;
@@ -2234,13 +2300,14 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 							}
 
-							for ( var i = 0; i < uvs.length; i++ ) {
+							for ( var i = 0; i < indices.length; i += 3 ) {
 
 								var centerUV = { x: 0.0, y: 0.0 };
 
 								for ( var j = 0; j < 3; j++ ) {
 
-									var uv = uvs[ i ][ j ];
+									var index = indices[ i * 3 + j ];
+									var uv = { x: uvs[ index * 2 + 0 ], y: uvs[ index * 2 + 1 ] };
 
 									if ( getAlphaByUv( image, uv ) < threshold ) {
 
@@ -2255,7 +2322,6 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 								centerUV.x /= 3;
 								centerUV.y /= 3;
-
 
 								if ( getAlphaByUv( image, centerUV ) < threshold ) {
 
@@ -2303,49 +2369,49 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 						};
 
 						var imageData = t.image.data !== undefined ? t.image : createImageData( t.image );
-						var uvs = geometry.faceVertexUvs[ 0 ].slice( m.faceOffset, m.faceOffset + m.faceNum );
+						var indices = geometry.index.array.slice( m.faceOffset * 3, m.faceOffset * 3 + m.faceNum * 3 );
 
-						m.textureTransparency = detectTextureTransparency( imageData, uvs );
+						if ( detectTextureTransparency( imageData, geometry.attributes.uv.array, indices ) ) m.transparent = true;
+
+						delete m.faceOffset;
+						delete m.faceNum;
 
 					} );
 
 				}
 
+				m.map = getTexture( p.map, textures );
+				m.uniforms.map.value = m.map;
 				checkTextureTransparency( m );
 
 			}
 
-			if ( m.envMap !== null ) {
+			if ( p.envMap !== undefined ) {
+
+				m.envMap = getTexture( p.envMap, textures );
+				m.uniforms.envMap.value = m.envMap;
+				m.combine = p.envMapType;
 
 				// TODO: WebGLRenderer should automatically update?
-				function updateMaterialWhenTextureIsReady ( m ) {
+				m.envMap.readyCallbacks.push( function ( t ) {
 
-					m.envMap.readyCallbacks.push( function ( t ) {
+					m.needsUpdate = true;
 
-						m.needsUpdate = true;
-
-					} );
-
-				}
-
-				m.combine = p.envMapType;
-				updateMaterialWhenTextureIsReady( m );
+				} );
 
 			}
 
-			m.uniforms.opacity.value = m.opacity;
-			m.uniforms.diffuse.value = m.color;
+			m.uniforms.opacity.value = p.opacity;
+			m.uniforms.diffuse.value.copy( p.color );
 
-			if ( m.emissive ) {
+			if ( p.emissive !== undefined ) {
 
-				m.uniforms.emissive.value = m.emissive;
+				m.uniforms.emissive.value.copy( p.emissive );
 
 			}
 
-			m.uniforms.map.value = m.map;
-			m.uniforms.envMap.value = m.envMap;
-			m.uniforms.specular.value = m.specular;
-			m.uniforms.shininess.value = Math.max( m.shininess, 1e-4 ); // to prevent pow( 0.0, 0.0 )
+			m.uniforms.specular.value.copy( p.specular );
+			m.uniforms.shininess.value = Math.max( p.shininess, 1e-4 ); // to prevent pow( 0.0, 0.0 )
 
 			if ( model.metadata.format === 'pmd' ) {
 
@@ -2361,15 +2427,20 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 				};
 
-				m.uniforms.outlineThickness.value = p2.edgeFlag === 1 ? 0.003 : 0.0;
-				m.uniforms.outlineColor.value = new THREE.Color( 0.0, 0.0, 0.0 );
-				m.uniforms.outlineAlpha.value = 1.0;
+				m.outlineParameters = {
+					thickness: p2.edgeFlag === 1 ? 0.003 : 0.0,
+					color: new THREE.Color( 0.0, 0.0, 0.0 ),
+					alpha: 1.0
+				};
+
+				if ( m.outlineParameters.thickness === 0.0 ) m.outlineParameters.visible = false;
+
+				m.uniforms.toonMap.value = textures[ p2.toonIndex ];
 				m.uniforms.celShading.value = 1;
 
 				if ( p2.toonIndex === -1 ) {
 
 					m.uniforms.hasToonTexture.value = 0;
-					m.uniforms.toonMap.value = null;
 
 				} else {
 
@@ -2382,9 +2453,14 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 			} else {
 
-				m.uniforms.outlineThickness.value = p2.edgeSize / 300;
-				m.uniforms.outlineColor.value = new THREE.Color( p2.edgeColor[ 0 ], p2.edgeColor[ 1 ], p2.edgeColor[ 2 ] );
-				m.uniforms.outlineAlpha.value = p2.edgeColor[ 3 ];
+				m.outlineParameters = {
+					thickness: p2.edgeSize / 300,
+					color: new THREE.Color( p2.edgeColor[ 0 ], p2.edgeColor[ 1 ], p2.edgeColor[ 2 ] ),
+					alpha: p2.edgeColor[ 3 ]
+				};
+
+				if ( m.outlineParameters.thickness === 0.0 ) m.outlineParameters.visible = false;
+
 				m.uniforms.celShading.value = 1;
 
 				if ( p2.toonIndex === -1 ) {
@@ -2414,8 +2490,6 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 			}
 
-			m.toonMap = m.uniforms.toonMap.value;
-
 			material.materials.push( m );
 
 		}
@@ -2442,9 +2516,9 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 					var m = material.materials[ e.index ];
 
-					if ( m.opacity !== e.diffuse[ 3 ] ) {
+					if ( m.uniforms.opacity.value !== e.diffuse[ 3 ] ) {
 
-						m.morphTransparency = true;
+						m.transparent = true;
 
 					}
 
@@ -2539,8 +2613,7 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 			var bodyB = rigidBodies[ p.rigidBodyIndex2 ];
 
 			/*
-			 * Refer http://www20.atpages.jp/katwat/wp/?p=4135
-			 * for what this is for
+			 * Refer to http://www20.atpages.jp/katwat/wp/?p=4135
 			 */
 			if ( bodyA.type !== 0 && bodyB.type === 2 ) {
 
@@ -2562,18 +2635,21 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 	};
 
-	function saveOriginalBoneNames ( mesh ) {
+	var initGeometry = function () {
 
-		var bones = mesh.skeleton.bones;
-		var bones2 = mesh.geometry.bones;
+		geometry.setIndex( ( buffer.indices.length > 65535 ? THREE.Uint32Attribute : THREE.Uint16Attribute )( buffer.indices, 1 ) );
+		geometry.addAttribute( 'position', THREE.Float32Attribute( buffer.vertices, 3 ) );
+		geometry.addAttribute( 'normal', THREE.Float32Attribute( buffer.normals, 3 ) );
+		geometry.addAttribute( 'uv', THREE.Float32Attribute( buffer.uvs, 2 ) );
+		geometry.addAttribute( 'skinIndex', THREE.Float32Attribute( buffer.skinIndices, 4 ) );
+		geometry.addAttribute( 'skinWeight', THREE.Float32Attribute( buffer.skinWeights, 4 ) );
 
-		for ( var i = 0; i < bones.length; i++ ) {
-
-			var n = model.bones[ i ].originalName;
-			bones[ i ].originalName = n;
-			bones2[ i ].originalName = n;
-
-		}
+		geometry.computeBoundingSphere();
+		geometry.computeFaceNormals();
+		geometry.verticesNeedUpdate = true;
+		geometry.normalsNeedUpdate = true;
+		geometry.uvsNeedUpdate = true;
+		geometry.mmdFormat = model.metadata.format;
 
 	};
 
@@ -2583,19 +2659,13 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 	initFaces();
 	initBones();
 	initIKs();
+	initGrants();
 	initMorphs();
 	initMaterials();
 	initPhysics();
-
-	geometry.computeFaceNormals();
-	geometry.verticesNeedUpdate = true;
-	geometry.normalsNeedUpdate = true;
-	geometry.uvsNeedUpdate = true;
-	geometry.mmdFormat = model.metadata.format;
+	initGeometry();
 
 	var mesh = new THREE.SkinnedMesh( geometry, material );
-
-	saveOriginalBoneNames( mesh );
 
 	// console.log( mesh ); // for console debug
 
@@ -2635,10 +2705,6 @@ THREE.MMDLoader.prototype.createAnimation = function ( mesh, vmd, name ) {
 				}
 			);
 
-		}
-
-		for ( var i = 0; i < orderedMotions.length; i++ ) {
-
 			var array = orderedMotions[ i ];
 			var keys = animation.hierarchy[ i ].keys;
 			var bone = bones[ i ];
@@ -2653,26 +2719,20 @@ THREE.MMDLoader.prototype.createAnimation = function ( mesh, vmd, name ) {
 
 			}
 
-		}
-
-		for ( var i = 0; i < orderedMotions.length; i++ ) {
-
-			var bone = bones[ i ];
-			var keys = animation.hierarchy[ i ].keys;
 			helper.insertBoneAnimationKeyAtTimeZero( keys, bone );
 			helper.insertStartBoneAnimationKey( keys );
-
-		}
-
-		if ( mesh.geometry.animations === undefined ) {
-
-			mesh.geometry.animations = [];
 
 		}
 
 		var clip = THREE.AnimationClip.parseAnimation( animation, mesh.geometry.bones );
 
 		if ( clip !== null ) {
+
+			if ( mesh.geometry.animations === undefined ) {
+
+				mesh.geometry.animations = [];
+
+			}
 
 			mesh.geometry.animations.push( clip );
 
@@ -2699,10 +2759,6 @@ THREE.MMDLoader.prototype.createAnimation = function ( mesh, vmd, name ) {
 
 			morphAnimation.hierarchy.push( { keys: [] } );
 
-		}
-
-		for ( var i = 0; i < orderedMorphs.length; i++ ) {
-
 			var array = orderedMorphs[ i ];
 			var keys = morphAnimation.hierarchy[ i ].keys;
 
@@ -2716,6 +2772,8 @@ THREE.MMDLoader.prototype.createAnimation = function ( mesh, vmd, name ) {
 			}
 
 		}
+
+		// TODO: should we use THREE.AnimationClip.CreateFromMorphTargetSequence() instead?
 
 		var tracks = [];
 
@@ -2737,13 +2795,13 @@ THREE.MMDLoader.prototype.createAnimation = function ( mesh, vmd, name ) {
 
 		if ( clip !== null ) {
 
-			if ( mesh.geometry.morphAnimations === undefined ) {
+			if ( mesh.geometry.animations === undefined ) {
 
-				mesh.geometry.morphAnimations = [];
+				mesh.geometry.animations = [];
 
 			}
 
-			mesh.geometry.morphAnimations.push( clip );
+			mesh.geometry.animations.push( clip );
 
 		}
 
@@ -3417,18 +3475,18 @@ THREE.MMDLoader.DataView.prototype = {
 
 	},
 
-	getIndex: function ( type ) {
+	getIndex: function ( type, isUnsigned ) {
 
 		switch ( type ) {
 
 			case 1:
-				return this.getInt8();
+				return ( isUnsigned === true ) ? this.getUint8() : this.getInt8();
 
 			case 2:
-				return this.getInt16();
+				return ( isUnsigned === true ) ? this.getUint16() : this.getInt16();
 
 			case 4:
-				return this.getInt32();
+				return this.getInt32(); // No Uint32
 
 			default:
 				throw 'unknown number type ' + type + ' exception.';
@@ -3437,13 +3495,13 @@ THREE.MMDLoader.DataView.prototype = {
 
 	},
 
-	getIndexArray: function ( type, size ) {
+	getIndexArray: function ( type, size, isUnsigned ) {
 
 		var a = [];
 
 		for ( var i = 0; i < size; i++ ) {
 
-			a.push( this.getIndex( type ) );
+			a.push( this.getIndex( type, isUnsigned ) );
 
 		}
 
@@ -3551,126 +3609,6 @@ THREE.MMDLoader.DataView.prototype = {
 };
 
 /*
- * MMD custom shaders based on MeshPhongMaterial.
- * This class extends ShaderMaterial while shaders are based on MeshPhongMaterial.
- * Keep this class updated on MeshPhongMaterial.
- */
-THREE.MMDMaterial = function ( parameters ) {
-
-	THREE.ShaderMaterial.call( this, parameters );
-
-	this.type = 'MMDMaterial';
-
-	this.faceOffset = null;
-	this.faceNum = null;
-	this.textureTransparency = false;
-	this.morphTransparency = false;
-
-	this.toonMap = null;
-
-	// the followings are copied from MeshPhongMaterial
-	this.color = new THREE.Color( 0xffffff ); // diffuse
-	this.emissive = new THREE.Color( 0x000000 );
-	this.specular = new THREE.Color( 0x111111 );
-	this.shininess = 30;
-
-	this.map = null;
-
-	this.lightMap = null;
-	this.lightMapIntensity = 1.0;
-
-	this.aoMap = null;
-	this.aoMapIntensity = 1.0;
-
-	this.emissiveMap = null;
-
-	this.bumpMap = null;
-	this.bumpScale = 1;
-
-	this.normalMap = null;
-	this.normalScale = new THREE.Vector2( 1, 1 );
-
-	this.displacementMap = null;
-	this.displacementScale = 1;
-	this.displacementBias = 0;
-
-	this.specularMap = null;
-
-	this.alphaMap = null;
-
-	this.envMap = null;
-	this.combine = THREE.MultiplyOperation;
-	this.reflectivity = 1;
-	this.refractionRatio = 0.98;
-
-	this.fog = true;
-
-	this.shading = THREE.SmoothShading;
-
-	this.wireframe = false;
-	this.wireframeLinewidth = 1;
-	this.wireframeLinecap = 'round';
-	this.wireframeLinejoin = 'round';
-
-	this.vertexColors = THREE.NoColors;
-
-	this.skinning = false;
-	this.morphTargets = false;
-	this.morphNormals = false;
-
-	this.lights = false;
-
-	this.setValues( parameters );
-
-};
-
-THREE.MMDMaterial.prototype = Object.create( THREE.ShaderMaterial.prototype );
-THREE.MMDMaterial.prototype.constructor = THREE.MMDMaterial;
-
-THREE.MMDMaterial.prototype.toJSON = function ( meta ) {
-
-	var data = THREE.ShaderMaterial.prototype.toJSON.call( this, meta );
-
-	if ( this.toonMap instanceof THREE.Texture ) data.toonMap = this.toonMap.toJSON( meta ).uuid;
-
-	data.uniforms = {};
-
-	var keys = Object.keys( this.uniforms );
-
-	for ( var i = 0; i < keys.length; i++ ) {
-
-		var key = keys[ i ];
-
-		data.uniforms[ key ] = {};
-
-		var keys2 = Object.keys( this.uniforms[ key ] );
-
-		for ( var j = 0; j < keys2.length; j++ ) {
-
-			var key2 = keys2[ j ];
-
-			data.uniforms[ key ][ key2 ] = this.uniforms[ key ][ key2 ];
-
-		}
-
-		if ( this.uniforms[ key ].type === 't' && this.uniforms[ key ].value !== null ) {
-
-			data.uniforms[ key ].value = this.uniforms[ key ].value.toJSON( meta ).uuid;
-
-		}
-
-	}
-
-	data.skinning = this.skinning;
-	data.lights = this.lights;
-	data.morphTargets = this.morphTargets;
-
-	return data;
-
-};
-
-
-/*
  * Shaders are copied from MeshPhongMaterial and then MMD spcific codes are inserted.
  * Keep shaders updated on MeshPhongMaterial.
  */
@@ -3678,146 +3616,22 @@ THREE.ShaderLib[ 'mmd' ] = {
 
 	uniforms: THREE.UniformsUtils.merge( [
 
-		THREE.UniformsLib[ "common" ],
-		THREE.UniformsLib[ "aomap" ],
-		THREE.UniformsLib[ "lightmap" ],
-		THREE.UniformsLib[ "emissivemap" ],
-		THREE.UniformsLib[ "bumpmap" ],
-		THREE.UniformsLib[ "normalmap" ],
-		THREE.UniformsLib[ "displacementmap" ],
-		THREE.UniformsLib[ "fog" ],
-		THREE.UniformsLib[ "lights" ],
+		THREE.ShaderLib[ 'phong' ].uniforms,
 
+		// MMD specific for toon mapping
 		{
-			"emissive" : { type: "c", value: new THREE.Color( 0x000000 ) },
-			"specular" : { type: "c", value: new THREE.Color( 0x111111 ) },
-			"shininess": { type: "f", value: 30 }
-		},
-
-		// ---- MMD specific for cel shading(outline drawing and toon mapping)
-		{
-			"outlineDrawing"  : { type: "i", value: 0 },
-			"outlineThickness": { type: "f", value: 0.0 },
-			"outlineColor"    : { type: "c", value: new THREE.Color( 0x000000 ) },
-			"outlineAlpha"    : { type: "f", value: 1.0 },
 			"celShading"      : { type: "i", value: 0 },
 			"toonMap"         : { type: "t", value: null },
 			"hasToonTexture"  : { type: "i", value: 0 }
 		}
-		// ---- MMD specific for cel shading(outline drawing and toon mapping)
 
 	] ),
 
-	vertexShader: [
+	vertexShader: THREE.ShaderLib[ 'phong' ].vertexShader,
 
-		"#define PHONG",
+	// put toon mapping logic right before "void main() {...}"
+	fragmentShader: THREE.ShaderLib[ 'phong' ].fragmentShader.replace( /void\s+main\s*\(\s*\)/, [
 
-		"varying vec3 vViewPosition;",
-
-		"#ifndef FLAT_SHADED",
-
-		"	varying vec3 vNormal;",
-
-		"#endif",
-
-		THREE.ShaderChunk[ "common" ],
-		THREE.ShaderChunk[ "uv_pars_vertex" ],
-		THREE.ShaderChunk[ "uv2_pars_vertex" ],
-		THREE.ShaderChunk[ "displacementmap_pars_vertex" ],
-		THREE.ShaderChunk[ "envmap_pars_vertex" ],
-		THREE.ShaderChunk[ "lights_phong_pars_vertex" ],
-		THREE.ShaderChunk[ "color_pars_vertex" ],
-		THREE.ShaderChunk[ "morphtarget_pars_vertex" ],
-		THREE.ShaderChunk[ "skinning_pars_vertex" ],
-		THREE.ShaderChunk[ "shadowmap_pars_vertex" ],
-		THREE.ShaderChunk[ "logdepthbuf_pars_vertex" ],
-
-		// ---- MMD specific for outline drawing
-		"	uniform bool outlineDrawing;",
-		"	uniform float outlineThickness;",
-		// ---- MMD specific for outline drawing
-
-		"void main() {",
-
-			THREE.ShaderChunk[ "uv_vertex" ],
-			THREE.ShaderChunk[ "uv2_vertex" ],
-			THREE.ShaderChunk[ "color_vertex" ],
-
-			THREE.ShaderChunk[ "beginnormal_vertex" ],
-			THREE.ShaderChunk[ "morphnormal_vertex" ],
-			THREE.ShaderChunk[ "skinbase_vertex" ],
-			THREE.ShaderChunk[ "skinnormal_vertex" ],
-			THREE.ShaderChunk[ "defaultnormal_vertex" ],
-
-		"#ifndef FLAT_SHADED", // Normal computed with derivatives when FLAT_SHADED
-
-		"	vNormal = normalize( transformedNormal );",
-
-		"#endif",
-
-			THREE.ShaderChunk[ "begin_vertex" ],
-			THREE.ShaderChunk[ "displacementmap_vertex" ],
-			THREE.ShaderChunk[ "morphtarget_vertex" ],
-			THREE.ShaderChunk[ "skinning_vertex" ],
-			THREE.ShaderChunk[ "project_vertex" ],
-			THREE.ShaderChunk[ "logdepthbuf_vertex" ],
-
-		"	vViewPosition = - mvPosition.xyz;",
-
-			THREE.ShaderChunk[ "worldpos_vertex" ],
-			THREE.ShaderChunk[ "envmap_vertex" ],
-			THREE.ShaderChunk[ "lights_phong_vertex" ],
-			THREE.ShaderChunk[ "shadowmap_vertex" ],
-
-		// ---- MMD specific for outline drawing
-		"	if ( outlineDrawing ) {",
-		"		float thickness = outlineThickness;",
-		"		float ratio = 1.0;", // TODO: support outline size ratio for each vertex
-		"		vec4 epos = projectionMatrix * modelViewMatrix * skinned;",
-		"		vec4 epos2 = projectionMatrix * modelViewMatrix * vec4( skinned.xyz + objectNormal, 1.0 );",
-		"		vec4 enorm = normalize( epos2 - epos );",
-		"		gl_Position = epos + enorm * thickness * epos.w * ratio;",
-		"	}",
-		// ---- MMD specific for outline drawing
-
-		"}"
-
-	].join( "\n" ),
-
-	fragmentShader: [
-
-		"#define PHONG",
-
-		"uniform vec3 diffuse;",
-		"uniform vec3 emissive;",
-		"uniform vec3 specular;",
-		"uniform float shininess;",
-		"uniform float opacity;",
-
-		THREE.ShaderChunk[ "common" ],
-		THREE.ShaderChunk[ "color_pars_fragment" ],
-		THREE.ShaderChunk[ "uv_pars_fragment" ],
-		THREE.ShaderChunk[ "uv2_pars_fragment" ],
-		THREE.ShaderChunk[ "map_pars_fragment" ],
-		THREE.ShaderChunk[ "alphamap_pars_fragment" ],
-		THREE.ShaderChunk[ "aomap_pars_fragment" ],
-		THREE.ShaderChunk[ "lightmap_pars_fragment" ],
-		THREE.ShaderChunk[ "emissivemap_pars_fragment" ],
-		THREE.ShaderChunk[ "envmap_pars_fragment" ],
-		THREE.ShaderChunk[ "fog_pars_fragment" ],
-		THREE.ShaderChunk[ "bsdfs" ],
-		THREE.ShaderChunk[ "lights_pars" ],
-		THREE.ShaderChunk[ "lights_phong_pars_fragment" ],
-		THREE.ShaderChunk[ "shadowmap_pars_fragment" ],
-		THREE.ShaderChunk[ "bumpmap_pars_fragment" ],
-		THREE.ShaderChunk[ "normalmap_pars_fragment" ],
-		THREE.ShaderChunk[ "specularmap_pars_fragment" ],
-		THREE.ShaderChunk[ "logdepthbuf_pars_fragment" ],
-
-		// ---- MMD specific for cel shading
-		"	uniform bool outlineDrawing;",
-		"	uniform vec3 outlineColor;",
-		"	uniform float outlineAlpha;",
 		"	uniform bool celShading;",
 		"	uniform sampler2D toonMap;",
 		"	uniform bool hasToonTexture;",
@@ -3834,7 +3648,13 @@ THREE.ShaderLib[ 'mmd' ] = {
 		"#undef RE_Direct",
 		"void RE_Direct_BlinnMMD( const in IncidentLight directLight, const in GeometricContext geometry, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {",
 		"	float dotNL = saturate( dot( geometry.normal, directLight.direction ) );",
-		"	vec3 irradiance = dotNL * PI * directLight.color; // punctual light",
+		"	vec3 irradiance = dotNL * directLight.color;",
+
+		"	#ifndef PHYSICALLY_CORRECT_LIGHTS",
+
+		"		irradiance *= PI; // punctual light",
+
+		"	#endif",
 
 		// ---- MMD specific for toon mapping
 		"	if ( celShading ) {",
@@ -3846,50 +3666,13 @@ THREE.ShaderLib[ 'mmd' ] = {
 
 		"	reflectedLight.directSpecular += irradiance * BRDF_Specular_BlinnPhong( directLight, geometry, material.specularColor, material.specularShininess ) * material.specularStrength;",
 		"}",
+		// ---- MMD specific for toon mapping
 		"#define RE_Direct	RE_Direct_BlinnMMD",
 		// ---- MMD specific for toon mapping
 
-		"void main() {",
+		"void main()",
 
-		// ---- MMD specific for outline drawing
-		"	if ( outlineDrawing ) {",
-		"		gl_FragColor = vec4( outlineColor, outlineAlpha );",
-		"		return;",
-		"	}",
-		// ---- MMD specific for outline drawing
-
-		"	vec4 diffuseColor = vec4( diffuse, opacity );",
-		"	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );",
-		"	vec3 totalEmissiveLight = emissive;",
-
-			THREE.ShaderChunk[ "logdepthbuf_fragment" ],
-			THREE.ShaderChunk[ "map_fragment" ],
-			THREE.ShaderChunk[ "color_fragment" ],
-			THREE.ShaderChunk[ "alphamap_fragment" ],
-			THREE.ShaderChunk[ "alphatest_fragment" ],
-			THREE.ShaderChunk[ "specularmap_fragment" ],
-			THREE.ShaderChunk[ "normal_fragment" ],
-			THREE.ShaderChunk[ "emissivemap_fragment" ],
-
-			// accumulation
-			THREE.ShaderChunk[ "lights_phong_fragment" ],
-			THREE.ShaderChunk[ "lights_template" ],
-
-			// modulation
-			THREE.ShaderChunk[ "aomap_fragment" ],
-
-			"vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveLight;",
-
-			THREE.ShaderChunk[ "envmap_fragment" ],
-			THREE.ShaderChunk[ "linear_to_gamma_fragment" ],
-
-			THREE.ShaderChunk[ "fog_fragment" ],
-
-		"	gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
-
-		"}"
-
-	].join( "\n" )
+	].join( "\n" ) )
 
 };
 
@@ -3978,14 +3761,81 @@ THREE.MMDAudioManager.prototype = {
 
 };
 
+THREE.MMDGrantSolver = function ( mesh ) {
+
+	this.mesh = mesh;
+
+};
+
+THREE.MMDGrantSolver.prototype = {
+
+	constructor: THREE.MMDGrantSolver,
+
+	update: function () {
+
+		var q = new THREE.Quaternion();
+
+		return function () {
+
+			for ( var i = 0; i < this.mesh.geometry.grants.length; i ++ ) {
+
+				var g = this.mesh.geometry.grants[ i ];
+				var b = this.mesh.skeleton.bones[ g.index ];
+				var pb = this.mesh.skeleton.bones[ g.parentIndex ];
+
+				if ( g.isLocal ) {
+
+					// TODO: implement
+					if ( g.affectPosition ) {
+
+					}
+
+					// TODO: implement
+					if ( g.affectRotation ) {
+
+					}
+
+				} else {
+
+					// TODO: implement
+					if ( g.affectPosition ) {
+
+					}
+
+					if ( g.affectRotation ) {
+
+						q.set( 0, 0, 0, 1 );
+						q.slerp( pb.quaternion, g.ratio );
+						b.quaternion.multiply( q );
+						b.updateMatrixWorld( true );
+
+					}
+
+				}
+
+			}
+
+		};
+
+	}()
+
+};
+
 THREE.MMDHelper = function ( renderer ) {
 
 	this.renderer = renderer;
+
+	this.outlineEffect = null;
+
+	this.effect = null;
+
+	this.autoClear = true;
 
 	this.meshes = [];
 
 	this.doAnimation = true;
 	this.doIk = true;
+	this.doGrant = true;
 	this.doPhysics = true;
 	this.doOutlineDrawing = true;
 	this.doCameraAnimation = true;
@@ -4003,27 +3853,46 @@ THREE.MMDHelper.prototype = {
 
 	init: function () {
 
-		this.initRender();
+		this.outlineEffect = new THREE.OutlineEffect( this.renderer );
 
-	},
-
-	initRender: function () {
-
-		this.renderer.autoClear = false;
-		this.renderer.autoClearColor = false;
-		this.renderer.autoClearDepth = false;
+		var size = this.renderer.getSize();
+		this.setSize( size.width, size.height );
 
 	},
 
 	add: function ( mesh ) {
 
+		if ( ! ( mesh instanceof THREE.SkinnedMesh ) ) {
+
+			throw new Error( 'THREE.MMDHelper.add() accepts only THREE.SkinnedMesh instance.' );
+
+		}
+
 		mesh.mixer = null;
 		mesh.ikSolver = null;
+		mesh.grantSolver = null;
 		mesh.physics = null;
 		this.meshes.push( mesh );
 
 		// workaround until I make IK and Physics Animation plugin
 		this.initBackupBones( mesh );
+
+	},
+
+	setSize: function ( width, height ) {
+
+		this.outlineEffect.setSize( width, height );
+
+	},
+
+	/*
+	 * Note: There may be a possibility that Outline wouldn't work well with Effect.
+	 *       In such a case, try to set doOutlineDrawing = false or
+	 *       manually comment out renderer.clear() in *Effect.render().
+	 */
+	setEffect: function ( effect ) {
+
+		this.effect = effect;
 
 	},
 
@@ -4069,47 +3938,52 @@ THREE.MMDHelper.prototype = {
 
 	setAnimation: function ( mesh ) {
 
-		if ( mesh.geometry.animations !== undefined || mesh.geometry.morphAnimations !== undefined ) {
+		if ( mesh.geometry.animations !== undefined ) {
 
 			mesh.mixer = new THREE.AnimationMixer( mesh );
 
-		}
-
-		if ( mesh.geometry.animations !== undefined ) {
+			var foundAnimation = false;
+			var foundMorphAnimation = false;
 
 			for ( var i = 0; i < mesh.geometry.animations.length; i++ ) {
 
-				var action = mesh.mixer.clipAction( mesh.geometry.animations[ i ] );
+				var clip = mesh.geometry.animations[ i ];
 
-				if ( i === 0 ) {
+				var action = mesh.mixer.clipAction( clip );
 
-					action.play();
+				if ( clip.tracks[ 0 ].name.indexOf( '.morphTargetInfluences' ) === 0 ) {
+
+					if ( ! foundMorphAnimation ) {
+
+						action.play();
+						foundMorphAnimation = true;
+
+					}
+
+				} else {
+
+					if ( ! foundAnimation ) {
+
+						action.play();
+						foundAnimation = true;
+
+					}
 
 				}
 
 			}
 
-		}
+			if ( foundAnimation ) {
 
-		if ( mesh.geometry.morphAnimations !== undefined ) {
+				mesh.ikSolver = new THREE.CCDIKSolver( mesh );
 
-			for ( var i = 0; i < mesh.geometry.morphAnimations.length; i++ ) {
+				if ( mesh.geometry.grants !== undefined ) {
 
-				var action = mesh.mixer.clipAction( mesh.geometry.morphAnimations[ i ] );
-
-				if ( i === 0 ) {
-
-					action.play();
+					mesh.grantSolver = new THREE.MMDGrantSolver( mesh );
 
 				}
 
 			}
-
-		}
-
-		if ( mesh.geometry.animations !== undefined ) {
-
-			mesh.ikSolver = new THREE.CCDIKSolver( mesh );
 
 		}
 
@@ -4127,7 +4001,7 @@ THREE.MMDHelper.prototype = {
 	},
 
 	/*
-	 * detect the longest duration among model, camera, and audio animation and then
+	 * detect the longest duration among model, camera, and audio animations and then
 	 * set it to them to sync.
 	 * TODO: touching private properties ( ._actions and ._clip ) so consider better way
 	 *       to access them for safe and modularity.
@@ -4259,13 +4133,17 @@ THREE.MMDHelper.prototype = {
 
 		var mixer = mesh.mixer;
 		var ikSolver = mesh.ikSolver;
+		var grantSolver = mesh.grantSolver;
 		var physics = mesh.physics;
 
 		if ( mixer !== null && this.doAnimation === true ) {
 
+			// restore/backupBones are workaround
+			// until I make IK, Grant, and Physics Animation plugin
+			this.restoreBones( mesh );
+
 			mixer.update( delta );
 
-			// workaround until I make IK and Physics Animation plugin
 			this.backupBones( mesh );
 
 		}
@@ -4273,6 +4151,12 @@ THREE.MMDHelper.prototype = {
 		if ( ikSolver !== null && this.doIk === true ) {
 
 			ikSolver.update();
+
+		}
+
+		if ( grantSolver !== null && this.doGrant === true ) {
+
+			grantSolver.update();
 
 		}
 
@@ -4309,146 +4193,141 @@ THREE.MMDHelper.prototype = {
 
 	render: function ( scene, camera ) {
 
-		this.renderer.clearColor();
-		this.renderer.clearDepth();
-		this.renderer.clear( true, true );
+		if ( this.effect === null ) {
 
-		this.renderMain( scene, camera );
+			if ( this.doOutlineDrawing ) {
 
-		if ( this.doOutlineDrawing ) {
-
-			this.renderOutline( scene, camera );
-
-		}
-
-		// workaround until I make IK and Physics Animation plugin
-		for ( var i = 0; i < this.meshes.length; i++ ) {
-
-			this.restoreBones( this.meshes[ i ] );
-
-		}
-
-	},
-
-	renderMain: function ( scene, camera ) {
-
-		this.setupMainRendering();
-		this.renderer.render( scene, camera );
-
-	},
-
-	renderOutline: function ( scene, camera ) {
-
-		var tmpEnabled = this.renderer.shadowMap.enabled;
-		this.renderer.shadowMap.enabled = false;
-
-		this.setupOutlineRendering();
-		this.renderer.render( scene, camera );
-
-		this.renderer.shadowMap.enabled = tmpEnabled;
-
-	},
-
-	setupMainRendering: function () {
-
-		for ( var i = 0; i < this.meshes.length; i++ ) {
-
-			this.setupMainRenderingOneMesh( this.meshes[ i ] );
-
-		}
-
-	},
-
-	setupMainRenderingOneMesh: function ( mesh ) {
-
-		for ( var i = 0; i < mesh.material.materials.length; i++ ) {
-
-			var m = mesh.material.materials[ i ];
-			m.uniforms.outlineDrawing.value = 0;
-			m.visible = true;
-
-			if ( m.opacity === 1.0 ) {
-
-				m.side = THREE.FrontSide;
-				m.transparent = false;
+				this.outlineEffect.autoClear = this.autoClear;
+				this.outlineEffect.render( scene, camera );
 
 			} else {
 
-				m.side = THREE.DoubleSide;
-				m.transparent = true;
+				var currentAutoClear = this.renderer.autoClear;
+				this.renderer.autoClear = this.autoClear;
+				this.renderer.render( scene, camera );
+				this.renderer.autoClear = currentAutoClear;
 
 			}
 
-			if ( m.textureTransparency === true || m.morphTransparency === true ) {
+		} else {
 
-				m.transparent = true;
+			var currentAutoClear = this.renderer.autoClear;
+			this.renderer.autoClear = this.autoClear;
+
+			if ( this.doOutlineDrawing ) {
+
+				this.renderWithEffectAndOutline( scene, camera );
+
+			} else {
+
+				this.effect.render( scene, camera );
 
 			}
+
+			this.renderer.autoClear = currentAutoClear;
 
 		}
 
 	},
 
-	setupOutlineRendering: function () {
+	/*
+	 * Currently(r82 dev) there's no way to render with two Effects
+	 * then attempt to get them to coordinately run by myself.
+	 *
+	 * What this method does
+	 * 1. let OutlineEffect make outline materials (only once)
+	 * 2. render normally with effect
+	 * 3. set outline materials
+	 * 4. render outline with effect
+	 * 5. restore original materials
+	 */
+	renderWithEffectAndOutline: function ( scene, camera ) {
 
-		for ( var i = 0; i < this.meshes.length; i++ ) {
+		var hasOutlineMaterial = false;
 
-			this.setupOutlineRenderingOneMesh( this.meshes[ i ] );
+		function checkIfObjectHasOutlineMaterial ( object ) {
+
+			if ( object.material === undefined ) return;
+
+			if ( object.userData.outlineMaterial !== undefined ) hasOutlineMaterial = true;
 
 		}
 
-	},
+		function setOutlineMaterial ( object ) {
 
-	setupOutlineRenderingOneMesh: function ( mesh ) {
+			if ( object.material === undefined ) return;
 
-		for ( var i = 0; i < mesh.material.materials.length; i++ ) {
+			if ( object.userData.outlineMaterial === undefined ) return;
 
-			var m = mesh.material.materials[ i ];
-			m.uniforms.outlineDrawing.value = 1;
-			m.side = THREE.BackSide;
+			object.userData.originalMaterial = object.material;
 
-			if ( m.uniforms.outlineAlpha.value < 1.0 ) {
+			object.material = object.userData.outlineMaterial;
 
-				m.transparent = true;
+		}
+
+		function restoreOriginalMaterial ( object ) {
+
+			if ( object.material === undefined ) return;
+
+			if ( object.userData.originalMaterial === undefined ) return;
+
+			object.material = object.userData.originalMaterial;
+
+		}
+
+		return function renderWithEffectAndOutline( scene, camera ) {
+
+			hasOutlineMaterial = false;
+
+			var forceClear = false;
+
+			scene.traverse( checkIfObjectHasOutlineMaterial );
+
+			if ( ! hasOutlineMaterial ) {
+
+				this.outlineEffect.render( scene, camera );
+
+				forceClear = true;
+
+				scene.traverse( checkIfObjectHasOutlineMaterial );
 
 			}
 
-			if ( m.uniforms.outlineThickness.value === 0.0 ) {
+			if ( hasOutlineMaterial ) {
 
-				m.visible = false;
+				this.renderer.autoClear = this.autoClear || forceClear;
+
+				this.effect.render( scene, camera );
+
+				scene.traverse( setOutlineMaterial );
+
+				var currentShadowMapEnabled = this.renderer.shadowMap.enabled;
+
+				this.renderer.autoClear = false;
+				this.renderer.shadowMap.enabled = false;
+
+				this.effect.render( scene, camera );
+
+				this.renderer.shadowMap.enabled = currentShadowMapEnabled;
+
+				scene.traverse( restoreOriginalMaterial );
+
+			} else {
+
+				this.outlineEffect.autoClear = this.autoClear || forceClear;
+				this.outlineEffect.render( scene, camera );
 
 			}
 
 		}
 
-	},
-
-	resetPose: function ( mesh ) {
-
-		var bones = mesh.skeleton.bones;
-		var bones2 = mesh.geometry.bones;
-
-		var v = new THREE.Vector3();
-		var q = new THREE.Quaternion();
-
-		for ( var i = 0; i < bones.length; i++ ) {
-
-			var b = bones2[ i ];
-			v.set( b.pos[ 0 ], b.pos[ 1 ], b.pos[ 2 ] );
-			q.set( b.rotq[ 0 ], b.rotq[ 1 ], b.rotq[ 2 ], b.rotq[ 3 ] );
-
-			bones[ i ].position.copy( v );
-			bones[ i ].quaternion.copy( q );
-
-		}
-
-	},
+	}(),
 
 	poseAsVpd: function ( mesh, vpd, params ) {
 
 		if ( ! ( params && params.preventResetPose === true ) ) {
 
-			this.resetPose( mesh );
+			mesh.pose();
 
 		}
 
@@ -4492,14 +4371,23 @@ THREE.MMDHelper.prototype = {
 
 		}
 
-		if ( params && params.preventIk === true ) {
+		if ( params === undefined || params.preventIk !== true ) {
 
-			return;
+			var solver = new THREE.CCDIKSolver( mesh );
+			solver.update();
 
 		}
 
-		var solver = new THREE.CCDIKSolver( mesh );
-		solver.update();
+		if ( params === undefined || params.preventGrant !== true ) {
+
+			if ( mesh.geometry.grants !== undefined ) {
+
+				var solver = new THREE.MMDGrantSolver( mesh );
+				solver.update();
+
+			}
+
+		}
 
 	},
 

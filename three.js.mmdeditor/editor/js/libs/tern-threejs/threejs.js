@@ -580,10 +580,6 @@
           "!type": "bool",
           "!doc": "default – false"
         },
-        "rotationAutoUpdate": {
-          "!type": "bool",
-          "!doc": "default – true"
-        },
         "userData": {
           "!type": "object",
           "!doc": "An object that can be used to store custom data about the Object3d. It should not hold references to functions as these will not be cloned."
@@ -1543,7 +1539,7 @@
       "!type": "fn(points: [])"
     },
     "BoxGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/BoxGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/BoxGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1551,7 +1547,7 @@
       "!type": "fn(width: number, height: number, depth: number, widthSegments: number, heightSegments: number, depthSegments: number)"
     },
     "CircleGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/CircleGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/CircleGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1559,14 +1555,14 @@
       "!type": "fn(radius: number, segments: number, thetaStart: number, thetaLength: number)"
     },
     "CubeGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/CubeGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/CubeGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
       "!doc": "Renamed CubeGeometry to BoxGeometry. see [page:BoxGeometry]."
     },
     "CylinderGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/CylinderGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/CylinderGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1574,7 +1570,7 @@
       "!type": "fn(radiusTop: number, radiusBottom: number, height: number, radiusSegments: number, heightSegments: number, openEnded: bool, thetaStart: number, thetaLength: number)"
     },
     "DodecahedronGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/DodecahedronGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/DodecahedronGeometry",
       "prototype": {
         "!proto": "THREE.PolyhedronGeometry.prototype",
         "parameters": {
@@ -1586,7 +1582,7 @@
       "!type": "fn(radius: number, detail: number)"
     },
     "ExtrudeGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/ExtrudeGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/ExtrudeGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype",
         "addShapeList": {
@@ -1602,7 +1598,7 @@
       "!type": "fn(shapes: [], options: object)"
     },
     "IcosahedronGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/IcosahedronGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/IcosahedronGeometry",
       "prototype": {
         "!proto": "THREE.PolyhedronGeometry.prototype",
         "parameters": {
@@ -1614,7 +1610,7 @@
       "!type": "fn(radius: number, detail: number)"
     },
     "LatheGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/LatheGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/LatheGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1622,7 +1618,7 @@
       "!type": "fn(points: [], segments: number, phiStart: number, phiLength: number)"
     },
     "OctahedronGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/OctahedronGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/OctahedronGeometry",
       "prototype": {
         "!proto": "THREE.PolyhedronGeometry.prototype",
         "parameters": {
@@ -1634,7 +1630,7 @@
       "!type": "fn(radius: number, detail: number)"
     },
     "ParametricGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/ParametricGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/ParametricGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1642,7 +1638,7 @@
       "!type": "fn(func: function, slices: number, stacks: number)"
     },
     "PlaneGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/PlaneGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/PlaneGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1650,7 +1646,7 @@
       "!type": "fn(width: number, height: number, widthSegments: number, heightSegments: number)"
     },
     "PolyhedronGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/PolyhedronGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/PolyhedronGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype",
         "parameters": {
@@ -1662,7 +1658,7 @@
       "!type": "fn(vertices: [], faces: [], radius: number, detail: number)"
     },
     "RingGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/RingGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/RingGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1670,7 +1666,7 @@
       "!type": "fn(innerRadius: number, outerRadius: number, thetaSegments: number, phiSegments: number, thetaStart: number, thetaLength: number)"
     },
     "ShapeGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/ShapeGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/ShapeGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype",
         "addShape": {
@@ -1682,7 +1678,7 @@
       "!type": "fn(shapes: [], options: object)"
     },
     "SphereGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/SphereGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/SphereGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1690,7 +1686,7 @@
       "!type": "fn(radius: number, widthSegments: number, heightSegments: number, phiStart: number, phiLength: number, thetaStart: number, thetaLength: number)"
     },
     "TetrahedronGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/TetrahedronGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/TetrahedronGeometry",
       "prototype": {
         "!proto": "THREE.PolyhedronGeometry.prototype",
         "parameters": {
@@ -1702,7 +1698,7 @@
       "!type": "fn(radius: number, detail: number)"
     },
     "TextGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/TextGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/TextGeometry",
       "prototype": {
         "!proto": "THREE.ExtrudeGeometry.prototype"
       },
@@ -1710,7 +1706,7 @@
       "!type": "fn(text: string, parameters: object)"
     },
     "TorusGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/TorusGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/TorusGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1718,7 +1714,7 @@
       "!type": "fn(radius: number, tube: number, radialSegments: number, tubularSegments: number, arc: number)"
     },
     "TorusKnotGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/TorusKnotGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/TorusKnotGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype"
       },
@@ -1726,7 +1722,7 @@
       "!type": "fn(radius: number, tube: number, radialSegments: number, tubularSegments: number, p: number, q: number, heightScale: number)"
     },
     "TubeGeometry": {
-      "!url": "http://threejs.org/docs/#Reference/extras/geometries/TubeGeometry",
+      "!url": "http://threejs.org/docs/#Reference/geometries/TubeGeometry",
       "prototype": {
         "!proto": "THREE.Geometry.prototype",
         "parameters": {
@@ -1888,11 +1884,7 @@
     "GridHelper": {
       "!url": "http://threejs.org/docs/#Reference/extras/helpers/GridHelper",
       "prototype": {
-        "!proto": "THREE.Line.prototype",
-        "setColors": {
-          "!type": "fn(colorCenterLine: number, colorGrid: number)",
-          "!doc": "Updates the color of the grid lines."
-        }
+        "!proto": "THREE.Line.prototype"
       },
       "!doc": "The GridHelper is an object to define grids. Grids are two-dimensional arrays of lines.",
       "!type": "fn(size: number, step: number)"
@@ -2276,14 +2268,6 @@
           "!type": "boolean",
           "!doc": "If true, the ajax request will use cookies."
         },
-        "showStatus": {
-          "!type": "bool",
-          "!doc": "If true, show loading status in the statusDomElement."
-        },
-        "statusDomElement": {
-          "!type": "DOMElement",
-          "!doc": "This is the recipient of status messages."
-        },
         "onLoadStart": {
           "!type": "function",
           "!doc": "The default is a function with empty body."
@@ -2319,26 +2303,14 @@
         "extractUrlBase": {
           "!type": "fn(url: string) -> string",
           "!doc": "Extract the base from the URL."
-        },
-        "addStatusElement": {
-          "!type": "fn() -> DOMElement",
-          "!doc": "Add a DOM element to indicate the progress and return the DOMElement"
         }
       },
       "!doc": "A loader for loading objects in JSON format.",
-      "!type": "fn(showStatus: bool)"
+      "!type": "fn()"
     },
     "Loader": {
       "!url": "http://threejs.org/docs/#Reference/loaders/Loader",
       "prototype": {
-        "showStatus": {
-          "!type": "bool",
-          "!doc": "If true, show loading status in the statusDomElement."
-        },
-        "statusDomElement": {
-          "!type": "DOMElement",
-          "!doc": "This is the recipient of status messages."
-        },
         "onLoadStart": {
           "!type": "function",
           "!doc": "The default is a function with empty body."
@@ -2370,14 +2342,10 @@
         "extractUrlBase": {
           "!type": "fn(url: string) -> string",
           "!doc": "Extract the base from the URL."
-        },
-        "addStatusElement": {
-          "!type": "fn() -> DOMElement",
-          "!doc": "Add a DOM element to indicate the progress and return the DOMElement"
         }
       },
       "!doc": "Base class for implementing loaders.",
-      "!type": "fn(showStatus: bool)"
+      "!type": "fn()"
     },
     "LoadingManager": {
       "!url": "http://threejs.org/docs/#Reference/loaders/LoadingManager",
@@ -2576,8 +2544,8 @@
       "!doc": "A low level class for loading resources with XmlHttpRequest, used internaly by most loaders.",
       "!type": "fn(manager: +THREE.LoadingManager)"
     },
-    "glTFLoader": {
-      "!url": "http://threejs.org/docs/#Reference/loaders/glTFLoader",
+    "GLTFLoader": {
+      "!url": "http://threejs.org/docs/#Reference/loaders/GLTFLoader",
       "prototype": {
         "!proto": "THREE.Loader.prototype",
         "load": {
@@ -4713,7 +4681,7 @@
         },
         "reflect": {
           "!type": "fn(normal: +THREE.Vector3) -> +THREE.Vector3",
-          "!doc": "Reflect incident vector off of plane orthogonal to normal. normal is assumed to have unit length."
+          "!doc": "Reflect incident vector off of plane orthogonal to normal. Normal is assumed to have unit length."
         },
         "fromArray": {
           "!type": "fn(array: []) -> +THREE.Vector3",
@@ -4721,7 +4689,7 @@
         },
         "multiply": {
           "!type": "fn(v: +THREE.Vector3) -> +THREE.Vector3",
-          "!doc": "Multipies this vector by vector v."
+          "!doc": "Multiplies this vector by vector v."
         },
         "applyProjection": {
           "!type": "fn(m: +THREE.Matrix4) -> +THREE.Vector3",
@@ -4733,7 +4701,7 @@
         },
         "applyEuler": {
           "!type": "fn(euler: +THREE.Euler) -> +THREE.Vector3",
-          "!doc": "Applies euler transform to this vector by converting the [page:Euler] obect to a [page:Quaternion] and applying."
+          "!doc": "Applies euler transform to this vector by converting the [page:Euler] object to a [page:Quaternion] and applying."
         },
         "applyQuaternion": {
           "!type": "fn(quaternion: +THREE.Quaternion) -> +THREE.Vector3",
@@ -5291,10 +5259,6 @@
         "generateMipmaps": {
           "!type": "boolean",
           "!doc": "Whether to generate mipmaps (if possible) for a texture. True by default."
-        },
-        "shareDepthFrom": {
-          "!type": "+THREE.WebGLRenderTarget",
-          "!doc": "Shares the depth from another WebGLRenderTarget. Default is null."
         },
         "setSize": {
           "!type": "fn(width: number, height: number)",

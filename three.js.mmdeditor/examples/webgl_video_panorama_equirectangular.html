@@ -31,7 +31,7 @@
 
 		<div id="container"></div>
 
-		<script src="../build/three.min.js"></script>
+		<script src="../build/three.js"></script>
 
 		<script>
 
@@ -65,9 +65,11 @@
 				var video = document.createElement( 'video' );
 				video.width = 640;
 				video.height = 360;
-				video.autoplay = true;
 				video.loop = true;
+				video.muted = true;
 				video.src = "textures/pano.webm";
+				video.setAttribute( 'webkit-playsinline', 'webkit-playsinline' );
+				video.play();
 
 				var texture = new THREE.VideoTexture( video );
 				texture.minFilter = THREE.LinearFilter;
@@ -87,8 +89,7 @@
 				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-				document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
-				document.addEventListener( 'MozMousePixelScroll', onDocumentMouseWheel, false);
+				document.addEventListener( 'wheel', onDocumentMouseWheel, false );
 
 				//
 
@@ -138,25 +139,7 @@
 
 			function onDocumentMouseWheel( event ) {
 
-				// WebKit
-
-				if ( event.wheelDeltaY ) {
-
-					distance -= event.wheelDeltaY * 0.05;
-
-				// Opera / Explorer 9
-
-				} else if ( event.wheelDelta ) {
-
-					distance -= event.wheelDelta * 0.05;
-
-				// Firefox
-
-				} else if ( event.detail ) {
-
-					distance += event.detail * 1.0;
-
-				}
+				distance += event.deltaY * 0.05;
 
 			}
 
