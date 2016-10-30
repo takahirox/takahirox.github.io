@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <title>Models</title>
     <meta name="description" content="Models ? A-Frame">
-<!--
     <script>
+    /*
     var WebVRConfig = {
         FORCE_ENABLE_VR: true,
         BUFFER_SCALE: 1.0
     };
+    */
     </script>
--->
     <script src="../../../build/aframe.js"></script>
     <script src="../../../node_modules/three/examples/js/libs/charsetencoder.min.js"></script>
     <script src="../../../node_modules/three/examples/js/libs/ammo.js"></script>
@@ -21,6 +21,8 @@
       <a-assets>
         <a-asset-item id="tree1" src="../../assets/models/tree1/tree1.dae"></a-asset-item>
         <a-asset-item id="tree2" src="../../assets/models/tree2/tree2.dae"></a-asset-item>
+        <a-asset-item id="model" type="arraybuffer" src="https://threejs.org/examples/models/mmd/miku/miku_v2.pmd"></a-asset-item>
+        <a-asset-item id="vpd" mimeType="text/plain; charset=shift_jis" src="https://threejs.org/examples/models/mmd/vpd/01.vpd"></a-asset-item>
         <img id="sky" src="peach-gradient.jpg">
       </a-assets>
 
@@ -28,9 +30,9 @@
       	<a-camera></a-camera>
       </a-entity>
 
-      <a-mmd-model src="https://threejs.org/examples/models/mmd/miku/miku_v2.pmd"
-         vpd="url(https://threejs.org/examples/models/mmd/vpd/01.vpd)"
-         physics="true" blink="true"></a-mmd-model>
+      <a-mmd audio="null">
+        <a-mmd-model src="#model" vpd="#vpd" position="0 0 0" physics="true" blink="true"></a-mmd-model>
+      </a-mmd>
 
       <a-collada-model src="#tree1" position="1 0 -1" rotation="0 30 0"
                        scale="1.4 1.4 1.4"></a-collada-model>
