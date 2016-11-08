@@ -297,14 +297,26 @@ Menubar.Add = function ( editor ) {
 	option.onClick( function () {
 
 		var loader = new THREE.MMDLoader();
-		loader.setDefaultTexturePath( '../examples/models/mmd/default/' );
 
 		loader.loadModel( '../examples/models/mmd/miku/miku_v2.pmd', function ( object ) {
 
 			var mesh = object;
 			mesh.name = 'Miku ' + ( ++ meshCount );
 
+			var originalBones = [];
+
+			var bones = mesh.skeleton.bones;
+
+			for ( var i = 0, il = bones.length; i < il; i ++ ) {
+
+				originalBones.push( bones[ i ].clone() );
+
+			}
+
+			mesh.userData.originalBones = originalBones;
+
 			mesh.ikSolver = new THREE.CCDIKSolver( mesh );
+			mesh.grantSolver = new THREE.MMDGrantSolver( mesh );
 			mesh.physics = new THREE.MMDPhysics( mesh );
 			mesh.physics.warmup( 10 );
 

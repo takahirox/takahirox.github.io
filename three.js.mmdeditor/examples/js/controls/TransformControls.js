@@ -646,6 +646,7 @@
 		var mouseDownEvent = { type: "mouseDown" };
 		var mouseUpEvent = { type: "mouseUp", mode: _mode };
 		var objectChangeEvent = { type: "objectChange" };
+		var objectChangeBeforeEvent = { type: "objectChangeBefore" };
 
 		var ray = new THREE.Raycaster();
 		var pointerVector = new THREE.Vector2();
@@ -913,6 +914,8 @@
 
 			event.preventDefault();
 			event.stopPropagation();
+
+			scope.dispatchEvent( objectChangeBeforeEvent );
 
 			point.copy( planeIntersect.point );
 

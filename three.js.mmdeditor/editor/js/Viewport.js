@@ -56,7 +56,87 @@ var Viewport = function ( editor ) {
 	var objectRotationOnDown = null;
 	var objectScaleOnDown = null;
 
+	function prepareIk( object ) {
+
+		function run( mesh ) {
+
+			if ( mesh.ikSolver !== undefined ) {
+
+				var bones = mesh.skeleton.bones;
+				var bones2 = mesh.userData.originalBones;
+
+				for ( var i = 0, il = bones.length; i < il; i ++ ) {
+
+					bones[ i ].position.copy( bones2[ i ].position );
+					bones[ i ].quaternion.copy( bones2[ i ].quaternion );
+
+				}
+
+			}
+
+		}
+
+		run( object );
+		object.traverseAncestors( run );
+
+	}
+
+	function updateIk( object ) {
+
+		function run( mesh ) {
+
+			if ( mesh.ikSolver !== undefined ) {
+
+				mesh.ikSolver.update( { saveOriginalBonesBeforeIK: true } );
+
+				var bones = mesh.skeleton.bones;
+				var bones2 = mesh.userData.originalBones;
+
+				for ( var i = 0, il = bones.length; i < il; i ++ ) {
+
+					bones2[ i ].position.copy( bones[ i ].position );
+					bones2[ i ].quaternion.copy( bones[ i ].quaternion );
+
+				}
+
+			}
+
+			if ( mesh.grantSolver !== undefined && mesh.geometry.grant !== undefined ) {
+
+				mesh.grantSolver.update();
+
+			}
+
+		}
+
+		run( object );
+		object.traverseAncestors( run );
+
+	}
+
 	var transformControls = new THREE.TransformControls( camera, container.dom );
+	transformControls.addEventListener( 'objectChangeBefore', function () {
+
+		var object = transformControls.object;
+
+		if ( object !== undefined ) {
+
+			prepareIk( object );
+
+		}
+
+	} );
+	transformControls.addEventListener( 'objectChange', function () {
+
+		var object = transformControls.object;
+
+		if ( object !== undefined ) {
+
+			updateIk( object );
+
+		}
+
+	} );
 	transformControls.addEventListener( 'change', function () {
 
 		var object = transformControls.object;
@@ -601,8 +681,17 @@ var Viewport = function ( editor ) {
 
 		scene.traverse( function ( object ) {
 
-			if ( object.ikSolver !== undefined ) object.ikSolver.update();
-			if ( object.physics !== undefined ) object.physics.update( clock.getDelta() );
+			if ( object.physics !== undefined ) {
+
+				object.physics.update( clock.getDelta() );
+
+				if ( editor.helpers[ object.id ] !== undefined ) {
+
+					editor.helpers[ object.id ].update();
+
+				}
+
+			}
 
 		} );
 

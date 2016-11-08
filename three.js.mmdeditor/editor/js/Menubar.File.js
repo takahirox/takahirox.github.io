@@ -199,6 +199,33 @@ Menubar.File = function ( editor ) {
 	} );
 	options.add( option );
 
+	// Export VPD
+
+	var option = new UI.Row();
+	option.setClass( 'option' );
+	option.setTextContent( 'Export VPD' );
+	option.onClick( function () {
+
+		var object = editor.selected;
+
+		if ( object === null || object.isSkinnedMesh !== true ) {
+
+			window.alert( 'select SkinnedMesh instance.' );
+			return;
+
+		}
+
+		var exporter = new THREE.MMDExporter();
+
+		var blob = new Blob( [ exporter.parseVpd( object, true ) ], { type: 'text/plain; charset=shift_jis' } );
+
+		link.href = URL.createObjectURL( blob );
+		link.download = 'pose.vpd';
+		link.click();
+
+	} );
+	options.add( option );
+
 	//
 
 	options.add( new UI.HorizontalRule() );
