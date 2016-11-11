@@ -26,11 +26,49 @@
 
 THREE.OutlineEffect = function ( renderer, parameters ) {
 
-	var _this = this;
+	/*
+	 * See #9918
+	 *
+	 * Here enables THREE.OutlineEffect to be called from other *Effect, like
+	 *
+	 * effect = new THREE.VREffect( new THREE.OutlineEffect( renderer ) );
+	 *
+	 * function render () {
+	 *
+ 	 * 	effect.render( scene, camera );
+	 *
+	 * }
+	 */
+	var keys = Object.keys( renderer );
+
+	for ( var i = 0, il = keys.length; i < il; i ++ ) {
+
+		var key = keys[ i ];
+
+		if ( typeof renderer[ key ] === 'function' ) {
+
+			/*
+			 * this works as
+			 * 	this.func = function ( arg1, arg2, ... ) {
+			 *
+			 * 		renderer.func( arg1, arg2, ... );
+			 *
+			 * 	};
+			 */
+			this[ key ] = renderer[ key ].bind( renderer );
+
+		} else {
+
+			// just copy property
+			this[ key ] = renderer[ key ];
+
+		}
+
+	}
 
 	parameters = parameters || {};
 
-	this.autoClear = parameters.autoClear !== undefined ? parameters.autoClear : true;
+	this.enabled = true;
 
 	var defaultThickness = parameters.defaultThickness !== undefined ? parameters.defaultThickness : 0.003;
 	var defaultColor = parameters.defaultColor !== undefined ? parameters.defaultColor : new THREE.Color( 0x000000 );
@@ -426,13 +464,14 @@ THREE.OutlineEffect = function ( renderer, parameters ) {
 
 	}
 
-	this.setSize = function ( width, height ) {
-
-		renderer.setSize( width, height );
-
-	};
-
 	this.render = function ( scene, camera, renderTarget, forceClear ) {
+
+		if ( this.enabled === false ) {
+
+			renderer.render( scene, camera, renderTarget, forceClear );
+			return;
+
+		}
 
 		var currentAutoClear = renderer.autoClear;
 		renderer.autoClear = this.autoClear;

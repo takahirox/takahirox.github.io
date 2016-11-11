@@ -291,17 +291,21 @@ Menubar.Add = function ( editor ) {
 
 	// Miku
 
-	var option = new UI.Row();
-	option.setClass( 'option' );
-	option.setTextContent( 'Miku' );
-	option.onClick( function () {
+	function loadMMDModel( url, imageCrossOrigin ) {
 
 		var loader = new THREE.MMDLoader();
+		if ( imageCrossOrigin === true ) loader.enableImageCrossOrigin( true );
 
-		loader.loadModel( '../examples/models/mmd/miku/miku_v2.pmd', function ( object ) {
+		loader.loadModel( url, function ( object ) {
 
 			var mesh = object;
-			mesh.name = 'Miku ' + ( ++ meshCount );
+			var metadata = mesh.geometry.metadata;
+
+			window.alert( metadata.modelName + '\n\n' + metadata.comment );
+
+			if ( mesh.name === '' ) mesh.name = 'MMD Model';
+
+			mesh.name += ' ' + ( ++ meshCount );
 
 			var originalBones = [];
 
@@ -318,11 +322,37 @@ Menubar.Add = function ( editor ) {
 			mesh.ikSolver = new THREE.CCDIKSolver( mesh );
 			mesh.grantSolver = new THREE.MMDGrantSolver( mesh );
 			mesh.physics = new THREE.MMDPhysics( mesh );
-			mesh.physics.warmup( 10 );
-
+			mesh.physics.warmup( 60 );
 			editor.execute( new AddObjectCommand( mesh ) );
 
-		} );
+		},
+		undefined,
+		function ( e ) { window.alert( e ); } );
+
+	}
+
+	var option = new UI.Row();
+	option.setClass( 'option' );
+	option.setTextContent( 'Miku' );
+	option.onClick( function () {
+
+		loadMMDModel( '../examples/models/mmd/miku/miku_v2.pmd' );
+
+	} );
+	options.add( option );
+
+	// MMD model via URL
+
+	var option = new UI.Row();
+	option.setClass( 'option' );
+	option.setTextContent( 'MMD model' );
+	option.onClick( function () {
+
+		var url = window.prompt( 'Input URL (should be no cross-origin problem)', true );
+
+		if ( url === null || url === '' ) return;
+
+		loadMMDModel( url );
 
 	} );
 	options.add( option );

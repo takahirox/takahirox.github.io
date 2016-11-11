@@ -377,6 +377,67 @@ var Loader = function ( editor ) {
 				break;
 			*/
 
+			case 'vpd':
+
+				var mesh = editor.selected;
+
+				if ( mesh === null || mesh.isSkinnedMesh !== true ) {
+
+					window.alert( 'select SkinnedMesh object.' );
+
+					break;
+
+				}
+
+				reader.addEventListener( 'load', function ( event ) {
+
+					var contents = event.target.result;
+
+					var loader = new THREE.MMDLoader();
+
+					var vpd = loader.parseVpd( contents );
+
+					var helper = new THREE.MMDHelper();
+
+					helper.poseAsVpd( mesh, vpd, { preventIk: true, preventGrant: true } );
+
+					if ( mesh.ikSolver !== undefined ) {
+
+						mesh.ikSolver.update( true );
+
+					}
+
+					if ( mesh.physics !== undefined ) {
+
+						mesh.physics.reset();
+
+					}
+
+					if ( mesh.userData.originalBones !== undefined ) {
+
+						var bones = mesh.skeleton.bones;
+						var bones2 = mesh.userData.originalBones;
+
+						for ( var i = 0, il = bones.length; i < il; i ++ ) {
+
+							bones2[ i ].position.copy( bones[ i ].position );
+							bones2[ i ].quaternion.copy( bones[ i ].quaternion );
+
+						}
+
+					}
+
+					if ( mesh.grantSolver !== undefined && mesh.geometry.grants !== undefined ) {
+
+						mesh.grantSolver.update();
+
+					}
+
+				}, false );
+				reader.readAsText( file, 'Shift-JIS' );
+
+				break;
+
 			case 'vtk':
 
 				reader.addEventListener( 'load', function ( event ) {

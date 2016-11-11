@@ -279,6 +279,7 @@ Editor.prototype = {
 			} else if ( object instanceof THREE.SkinnedMesh ) {
 
 				helper = new THREE.SkeletonHelper( object );
+				helper.visible = this.config.getKey( 'show skeleton' );
 
 			} else {
 

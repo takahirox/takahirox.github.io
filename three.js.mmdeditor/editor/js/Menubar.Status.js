@@ -7,6 +7,31 @@ Menubar.Status = function ( editor ) {
 	var container = new UI.Panel();
 	container.setClass( 'menu right' );
 
+	var showSkeleton = new UI.THREE.Boolean( editor.config.getKey( 'show skeleton' ), 'show skeleton' );
+	showSkeleton.text.setColor( '#888' );
+	showSkeleton.onChange( function () {
+
+		var value = this.getValue();
+
+		editor.config.setKey( 'show skeleton', value );
+
+		var helpers = editor.helpers;
+
+		var keys = Object.keys( helpers );
+
+		for ( var i = 0, il = keys.length; i < il; i ++ ) {
+
+			var key = keys[ i ];
+
+			var helper = helpers[ key ];
+
+			if ( helper instanceof THREE.SkeletonHelper ) helper.visible = value;
+
+		}
+
+	} );
+	container.add( showSkeleton );
+
 	var autosave = new UI.THREE.Boolean( editor.config.getKey( 'autosave' ), 'autosave' );
 	autosave.text.setColor( '#888' );
 	autosave.onChange( function () {

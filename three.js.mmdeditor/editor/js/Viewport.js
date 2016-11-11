@@ -87,7 +87,7 @@ var Viewport = function ( editor ) {
 
 			if ( mesh.ikSolver !== undefined ) {
 
-				mesh.ikSolver.update( { saveOriginalBonesBeforeIK: true } );
+				mesh.ikSolver.update( true );
 
 				var bones = mesh.skeleton.bones;
 				var bones2 = mesh.userData.originalBones;
@@ -101,7 +101,7 @@ var Viewport = function ( editor ) {
 
 			}
 
-			if ( mesh.grantSolver !== undefined && mesh.geometry.grant !== undefined ) {
+			if ( mesh.grantSolver !== undefined && mesh.geometry.grants !== undefined ) {
 
 				mesh.grantSolver.update();
 

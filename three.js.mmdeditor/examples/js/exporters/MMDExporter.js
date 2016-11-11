@@ -7,22 +7,29 @@
 
 THREE.MMDExporter = function () {
 
+	// Unicode to Shift_JIS table
+	var u2sTable;
+
 	function unicodeToShiftjis( str ) {
 
-		var encoder = new CharsetEncoder();
-		var table = encoder.s2uTable;
-		var dic = {};
+		if ( u2sTable === undefined ) {
 
-		var keys = Object.keys( table );
+			var encoder = new CharsetEncoder();
+			var table = encoder.s2uTable;
+			u2sTable = {};
 
-		for ( var i = 0, il = keys.length; i < il; i ++ ) {
+			var keys = Object.keys( table );
 
-			var k = keys[ i ];
+			for ( var i = 0, il = keys.length; i < il; i ++ ) {
 
-			var key = parseInt( k );
-			var value = table[ k ];
+				var key = keys[ i ];
 
-			dic[ value ] = key;
+				var value = table[ key ];
+				key = parseInt( key );
+
+				u2sTable[ value ] = key;
+
+			}
 
 		}
 
@@ -32,7 +39,7 @@ THREE.MMDExporter = function () {
 
 			var code = str.charCodeAt( i )
 
-			var value = dic[ code ];
+			var value = u2sTable[ code ];
 
 			if ( value === undefined ) {
 
@@ -65,18 +72,24 @@ THREE.MMDExporter = function () {
 	}
 
 	/* TODO: implement
+	// mesh -> pmd
 	this.parsePmd = function ( object ) {
 
 	};
 	*/
 
 	/* TODO: implement
+	// mesh -> pmx
 	this.parsePmx = function ( object ) {
 
 	};
 	*/
 
-	this.parseVpd = function ( skin, useOriginalBones ) {
+	/*
+	 * skeleton -> vpd
+	 * Returns Shift_JIS encoded Uint8Array. Otherwise return strings.
+	 */
+	this.parseVpd = function ( skin, outputShiftJis, useOriginalBones ) {
 
 		if ( skin.isSkinnedMesh !== true ) {
 
@@ -135,7 +148,7 @@ THREE.MMDExporter = function () {
 		var array = [];
 		array.push( 'Vocaloid Pose Data file' );
 		array.push( '' );
-		array.push( ( skin.name !== '' ? skin.name.replace( ' ', '_' ) : 'skin' ) + '.osm;' );
+		array.push( ( skin.name !== '' ? skin.name.replace( /\s/g, '_' ) : 'skin' ) + '.osm;' );
 		array.push( bones.length + ';' );
 		array.push( '' );
 
@@ -145,8 +158,8 @@ THREE.MMDExporter = function () {
 			var bone2 = bones2[ i ];
 
 			/*
-			 * use the saved bone matrix before solving IK.
-			 * also see CCDIKSolver for the detail.
+			 * use the bone matrix saved before solving IK.
+			 * see CCDIKSolver for the detail.
 			 */
 			if ( useOriginalBones === true &&
 				bone.userData.ik !== undefined &&
@@ -183,11 +196,12 @@ THREE.MMDExporter = function () {
 
 		var lines = array.join( '\n' );
 
-		return unicodeToShiftjis( lines );
+		return ( outputShiftJis === true ) ? unicodeToShiftjis( lines ) : lines;
 
 	};
 
 	/* TODO: implement
+	// animation + skeleton -> vmd
 	this.parseVmd = function ( object ) {
 
 	};

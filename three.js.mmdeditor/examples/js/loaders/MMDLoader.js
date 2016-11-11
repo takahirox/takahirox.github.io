@@ -41,6 +41,7 @@ THREE.MMDLoader = function ( manager ) {
 
 	THREE.Loader.call( this );
 	this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
+	this.imageCrossOrigin = false;
 
 };
 
@@ -66,6 +67,23 @@ THREE.MMDLoader.prototype.defaultToonTextures = [
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAL0lEQVRYR+3QQREAAAzCsOFfNJPBJ1XQS9r2hsUAAQIECBAgQIAAAQIECBAgsBZ4MUx/ofm2I/kAAAAASUVORK5CYII=',
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAL0lEQVRYR+3QQREAAAzCsOFfNJPBJ1XQS9r2hsUAAQIECBAgQIAAAQIECBAgsBZ4MUx/ofm2I/kAAAAASUVORK5CYII='
 ];
+
+/*
+ * getImageData() of CanvasRenderingContext2D with image in other domain
+ * for transparency detection fails because of cross-origin problem
+ * even if server responds with "Access-Control-Allow-Origin: *".
+ * If this.imageCrossOrigin is true, MMDLoader tries to solve this issue
+ * with
+ *   var image = new Image();
+ *   image.crossOrigin = 'anonymous';
+ *   image.src = url;
+ * This workaround can be removed if ImageLoader supports crossOrigin.
+ */
+THREE.MMDLoader.prototype.enableImageCrossOrigin = function ( enabled ) {
+
+	this.imageCrossOrigin = enabled;
+
+};
 
 THREE.MMDLoader.prototype.load = function ( modelUrl, vmdUrls, callback, onProgress, onError ) {
 
@@ -581,7 +599,7 @@ THREE.MMDLoader.prototype.parsePmd = function ( buffer ) {
 			p.diffuse = dv.getFloat32Array( 4 );
 			p.shininess = dv.getFloat32();
 			p.specular = dv.getFloat32Array( 3 );
-			p.emissive = dv.getFloat32Array( 3 );
+			p.ambient = dv.getFloat32Array( 3 );
 			p.toonIndex = dv.getInt8();
 			p.edgeFlag = dv.getUint8();
 			p.faceCount = dv.getUint32() / 3;
@@ -1163,7 +1181,7 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 			p.diffuse = dv.getFloat32Array( 4 );
 			p.specular = dv.getFloat32Array( 3 );
 			p.shininess = dv.getFloat32();
-			p.emissive = dv.getFloat32Array( 3 );
+			p.ambient = dv.getFloat32Array( 3 );
 			p.flag = dv.getUint8();
 			p.edgeColor = dv.getFloat32Array( 4 );
 			p.edgeSize = dv.getFloat32();
@@ -1379,7 +1397,7 @@ THREE.MMDLoader.prototype.parsePmx = function ( buffer ) {
 					m.diffuse = dv.getFloat32Array( 4 );
 					m.specular = dv.getFloat32Array( 3 );
 					m.shininess = dv.getFloat32();
-					m.emissive = dv.getFloat32Array( 3 );
+					m.ambient = dv.getFloat32Array( 3 );
 					m.edgeColor = dv.getFloat32Array( 4 );
 					m.edgeSize = dv.getFloat32();
 					m.textureColor = dv.getFloat32Array( 4 );
@@ -2110,7 +2128,7 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 			var m = model.morphs[ i ];
 			var params = { name: m.name };
 
-			var attribute = new THREE.Float32Attribute( model.metadata.vertexCount * 3, 3 );
+			var attribute = new THREE.Float32BufferAttribute( model.metadata.vertexCount * 3, 3 );
 
 			for ( var j = 0; j < model.metadata.vertexCount * 3; j++ ) {
 
@@ -2198,11 +2216,10 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 		var textures = [];
 		var textureLoader = new THREE.TextureLoader( this.manager );
 		var tgaLoader = new THREE.TGALoader( this.manager );
-		var color = new THREE.Color();
 		var offset = 0;
 		var materialParams = [];
 
-		function loadTexture ( filePath, params ) {
+		function loadTexture( filePath, params ) {
 
 			if ( params === undefined ) {
 
@@ -2241,26 +2258,96 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 			var texture = loader.load( fullPath, function ( t ) {
 
-				t.flipY = false;
-				t.wrapS = THREE.RepeatWrapping;
-				t.wrapT = THREE.RepeatWrapping;
+				function checkCrossOrigin( image ) {
 
-				if ( params.sphericalReflectionMapping === true ) {
+					if ( ! scope.imageCrossOrigin ) return true;
 
-					t.mapping = THREE.SphericalReflectionMapping;
+					// any better ways to check image has cross-origin problem?
+
+					var c = document.createElement( 'canvas' );
+					c.width = 1;
+					c.height = 1;
+
+					var ctx = c.getContext( '2d' );
+					ctx.drawImage( image, 0, 0 );
+
+					try {
+
+						ctx.getImageData( 0, 0, c.width, c.height );
+						return true;
+
+					} catch ( e ) {
+
+						if ( e.name.toLowerCase() === 'securityerror' && e.message.toLowerCase().indexOf( 'cross-origin' ) >= 0 ) {
+
+							return false;
+
+						} else {
+
+							throw e;
+
+						}
+
+					}
 
 				}
 
-				for ( var i = 0; i < texture.readyCallbacks.length; i++ ) {
+				function onLoad( t ) {
 
-					texture.readyCallbacks[ i ]( texture );
+					t.flipY = ( params.isToonTexture === true ) ? true : false;
+					t.wrapS = THREE.RepeatWrapping;
+					t.wrapT = THREE.RepeatWrapping;
+
+					if ( params.sphericalReflectionMapping === true ) {
+
+						t.mapping = THREE.SphericalReflectionMapping;
+
+					}
+
+					for ( var i = 0; i < t.readyCallbacks.length; i++ ) {
+
+						t.readyCallbacks[ i ]( t );
+
+					}
+
+					delete t.readyCallbacks;
 
 				}
 
-				delete texture.readyCallbacks;
+				if ( checkCrossOrigin( t.image ) ) {
+
+					onLoad( t );
+
+				} else {
+
+					// Override the image of texture. See enableImageCrossOrigin()
+
+					console.warn( 'THREE.MMDLoader: trying reload the image ' + fullPath +
+							' with image.crossOrigin="anonymous"; image.src=url; because of cross-origin issue' );
+
+					t.image = undefined;
+					t.version --;  // This's necessary not to update texture.
+					t.needsUpdate = false;
+
+					var image = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'img' );
+					image.onload = function () {
+
+						image.onload = null;
+
+						t.image = image;
+						t.needsUpdate = true;
+
+						onLoad( t );
+
+					};
+					image.crossOrigin = 'anonymous';
+					image.src = fullPath;
+
+				}
 
 			} );
 
+			// this'll be removed later
 			texture.readyCallbacks = [];
 
 			var uuid = THREE.Math.generateUUID();
@@ -2294,9 +2381,22 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 			offset += m.faceCount;
 
 			params.name = m.name;
-			params.color = color.fromArray( [ m.diffuse[ 0 ], m.diffuse[ 1 ], m.diffuse[ 2 ] ] ).clone();
+
+			/*
+			 * Color
+			 *
+			 * MMD         MeshPhongMaterial
+			 * diffuse  -  color
+			 * specular -  specular
+			 * ambient  -  emissive * a
+			 *               (a = 1.0 without map texture or 0.2 with map texture)
+			 *
+			 * MeshPhongMaterial doesn't have ambient. Set it to emissive instead.
+			 * It'll be too bright if material has map texture so using coef 0.2.
+			 */
+			params.color = new THREE.Color( m.diffuse[ 0 ], m.diffuse[ 1 ], m.diffuse[ 2 ] );
 			params.opacity = m.diffuse[ 3 ];
-			params.specular = color.fromArray( [ m.specular[ 0 ], m.specular[ 1 ], m.specular[ 2 ] ] ).clone();
+			params.specular = new THREE.Color( m.specular[ 0 ], m.specular[ 1 ], m.specular[ 2 ] );
 			params.shininess = m.shininess;
 
 			if ( params.opacity === 1.0 ) {
@@ -2388,28 +2488,18 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 			}
 
-			// TODO: check if this logic is right
-			if ( params.map === undefined /* && params.envMap === undefined */ ) {
-
-				params.emissive = color.fromArray( [ m.emissive[ 0 ], m.emissive[ 1 ], m.emissive[ 2 ] ] ).clone();
-
-			}
+			var coef = ( params.map === undefined ) ? 1.0 : 0.2;
+			params.emissive = new THREE.Color( m.ambient[ 0 ] * coef, m.ambient[ 1 ] * coef, m.ambient[ 2 ] * coef );
 
 			materialParams.push( params );
 
 		}
 
-		var shader = THREE.ShaderLib[ 'mmd' ];
-
 		for ( var i = 0; i < materialParams.length; i++ ) {
 
 			var p = materialParams[ i ];
 			var p2 = model.materials[ i ];
-			var m = new THREE.ShaderMaterial( {
-				uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
-				vertexShader: shader.vertexShader,
-				fragmentShader: shader.fragmentShader
-			} );
+			var m = new THREE.MeshPhongMaterial();
 
 			geometry.addGroup( p.faceOffset * 3, p.faceNum * 3, i );
 
@@ -2546,7 +2636,6 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 				}
 
 				m.map = getTexture( p.map, textures );
-				m.uniforms.map.value = m.map;
 				checkTextureTransparency( m );
 
 			}
@@ -2554,7 +2643,6 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 			if ( p.envMap !== undefined ) {
 
 				m.envMap = getTexture( p.envMap, textures );
-				m.uniforms.envMap.value = m.envMap;
 				m.combine = p.envMapType;
 
 				// TODO: WebGLRenderer should automatically update?
@@ -2566,17 +2654,17 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 			}
 
-			m.uniforms.opacity.value = p.opacity;
-			m.uniforms.diffuse.value.copy( p.color );
+			m.opacity = p.opacity;
+			m.color = p.color;
 
 			if ( p.emissive !== undefined ) {
 
-				m.uniforms.emissive.value.copy( p.emissive );
+				m.emissive = p.emissive;
 
 			}
 
-			m.uniforms.specular.value.copy( p.specular );
-			m.uniforms.shininess.value = Math.max( p.shininess, 1e-4 ); // to prevent pow( 0.0, 0.0 )
+			m.specular = p.specular;
+			m.shininess = Math.max( p.shininess, 1e-4 ); // to prevent pow( 0.0, 0.0 )
 
 			if ( model.metadata.format === 'pmd' ) {
 
@@ -2592,6 +2680,7 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 				};
 
+				// parameters for OutlineEffect
 				m.outlineParameters = {
 					thickness: p2.edgeFlag === 1 ? 0.003 : 0.0,
 					color: new THREE.Color( 0.0, 0.0, 0.0 ),
@@ -2600,24 +2689,14 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 				if ( m.outlineParameters.thickness === 0.0 ) m.outlineParameters.visible = false;
 
-				m.uniforms.toonMap.value = textures[ p2.toonIndex ];
-				m.uniforms.celShading.value = 1;
-
-				if ( p2.toonIndex === -1 ) {
-
-					m.uniforms.hasToonTexture.value = 0;
-
-				} else {
-
-					var n = model.toonTextures[ p2.toonIndex ].fileName;
-					var uuid = loadTexture( n, { defaultTexturePath: isDefaultToonTexture( n ) } );
-					m.uniforms.toonMap.value = textures[ uuid ];
-					m.uniforms.hasToonTexture.value = 1;
-
-				}
+				var toonFileName = ( p2.toonIndex === -1 ) ? 'toon00.bmp' : model.toonTextures[ p2.toonIndex ].fileName;
+				var uuid = loadTexture( toonFileName, { isToonTexture: true, defaultTexturePath: isDefaultToonTexture( toonFileName ) } );
+				m.gradientMap = getTexture( uuid, textures );
+				m.gradientMapAxisY = true;
 
 			} else {
 
+				// parameters for OutlineEffect
 				m.outlineParameters = {
 					thickness: p2.edgeSize / 300,
 					color: new THREE.Color( p2.edgeColor[ 0 ], p2.edgeColor[ 1 ], p2.edgeColor[ 2 ] ),
@@ -2626,32 +2705,24 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 				if ( ( p2.flag & 0x10 ) === 0 || m.outlineParameters.thickness === 0.0 ) m.outlineParameters.visible = false;
 
-				m.uniforms.celShading.value = 1;
+				var toonFileName, isDefaultToon;
 
-				if ( p2.toonIndex === -1 ) {
+				if ( p2.toonIndex === -1 || p2.toonFlag !== 0 ) {
 
-					m.uniforms.hasToonTexture.value = 0;
+					var num = p2.toonIndex + 1;
+					toonFileName = 'toon' + ( num < 10 ? '0' + num : num ) + '.bmp';
+					isDefaultToon = true;
 
 				} else {
 
-					if ( p2.toonFlag === 0 ) {
-
-						var n = model.textures[ p2.toonIndex ];
-						var uuid = loadTexture( n );
-						m.uniforms.toonMap.value = textures[ uuid ];
-
-					} else {
-
-						var num = p2.toonIndex + 1;
-						var fileName = 'toon' + ( num < 10 ? '0' + num : num ) + '.bmp';
-						var uuid = loadTexture( fileName, { defaultTexturePath: true } );
-						m.uniforms.toonMap.value = textures[ uuid ];
-
-					}
-
-					m.uniforms.hasToonTexture.value = 1;
+					toonFileName = model.textures[ p2.toonIndex ];
+					isDefaultToon = false;
 
 				}
+
+				var uuid = loadTexture( toonFileName, { isToonTexture: true, defaultTexturePath: isDefaultToon } );
+				m.gradientMap = getTexture( uuid, textures );
+				m.gradientMapAxisY = true;
 
 			}
 
@@ -2681,7 +2752,7 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 					var m = material.materials[ e.index ];
 
-					if ( m.uniforms.opacity.value !== e.diffuse[ 3 ] ) {
+					if ( m.opacity !== e.diffuse[ 3 ] ) {
 
 						m.transparent = true;
 
@@ -2802,15 +2873,16 @@ THREE.MMDLoader.prototype.createMesh = function ( model, texturePath, onProgress
 
 	var initGeometry = function () {
 
-		geometry.setIndex( ( buffer.indices.length > 65535 ? THREE.Uint32Attribute : THREE.Uint16Attribute )( buffer.indices, 1 ) );
-		geometry.addAttribute( 'position', THREE.Float32Attribute( buffer.vertices, 3 ) );
-		geometry.addAttribute( 'normal', THREE.Float32Attribute( buffer.normals, 3 ) );
-		geometry.addAttribute( 'uv', THREE.Float32Attribute( buffer.uvs, 2 ) );
-		geometry.addAttribute( 'skinIndex', THREE.Float32Attribute( buffer.skinIndices, 4 ) );
-		geometry.addAttribute( 'skinWeight', THREE.Float32Attribute( buffer.skinWeights, 4 ) );
+		geometry.setIndex( new ( buffer.indices.length > 65535 ? THREE.Uint32BufferAttribute : THREE.Uint16BufferAttribute )( buffer.indices, 1 ) );
+		geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( buffer.vertices, 3 ) );
+		geometry.addAttribute( 'normal', new THREE.Float32BufferAttribute( buffer.normals, 3 ) );
+		geometry.addAttribute( 'uv', new THREE.Float32BufferAttribute( buffer.uvs, 2 ) );
+		geometry.addAttribute( 'skinIndex', new THREE.Float32BufferAttribute( buffer.skinIndices, 4 ) );
+		geometry.addAttribute( 'skinWeight', new THREE.Float32BufferAttribute( buffer.skinWeights, 4 ) );
 
 		geometry.computeBoundingSphere();
 		geometry.mmdFormat = model.metadata.format;
+		geometry.metadata = model.metadata;
 
 	};
 
@@ -3799,73 +3871,6 @@ THREE.MMDLoader.DataView.prototype = {
 
 };
 
-/*
- * Shaders are copied from MeshPhongMaterial and then MMD spcific codes are inserted.
- * Keep shaders updated on MeshPhongMaterial.
- */
-THREE.ShaderLib[ 'mmd' ] = {
-
-	uniforms: THREE.UniformsUtils.merge( [
-
-		THREE.ShaderLib[ 'phong' ].uniforms,
-
-		// MMD specific for toon mapping
-		{
-			"celShading"      : { type: "i", value: 0 },
-			"toonMap"         : { type: "t", value: null },
-			"hasToonTexture"  : { type: "i", value: 0 }
-		}
-
-	] ),
-
-	vertexShader: THREE.ShaderLib[ 'phong' ].vertexShader,
-
-	// put toon mapping logic right before "void main() {...}"
-	fragmentShader: THREE.ShaderLib[ 'phong' ].fragmentShader.replace( /void\s+main\s*\(\s*\)/, [
-
-		"	uniform bool celShading;",
-		"	uniform sampler2D toonMap;",
-		"	uniform bool hasToonTexture;",
-
-		"	vec3 toon ( vec3 lightDirection, vec3 norm ) {",
-		"		if ( ! hasToonTexture ) {",
-		"			return vec3( 1.0 );",
-		"		}",
-		"		vec2 coord = vec2( 0.0, 0.5 * ( 1.0 - dot( lightDirection, norm ) ) );",
-		"		return texture2D( toonMap, coord ).rgb;",
-		"	}",
-
-		// redefine for MMD
-		"#undef RE_Direct",
-		"void RE_Direct_BlinnMMD( const in IncidentLight directLight, const in GeometricContext geometry, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {",
-		"	float dotNL = saturate( dot( geometry.normal, directLight.direction ) );",
-		"	vec3 irradiance = dotNL * directLight.color;",
-
-		"	#ifndef PHYSICALLY_CORRECT_LIGHTS",
-
-		"		irradiance *= PI; // punctual light",
-
-		"	#endif",
-
-		// ---- MMD specific for toon mapping
-		"	if ( celShading ) {",
-		"		reflectedLight.directDiffuse += material.diffuseColor * directLight.color * toon( directLight.direction, geometry.normal );",
-		"	} else {",
-		"		reflectedLight.directDiffuse += irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );",
-		"	}",
-		// ---- MMD specific for toon mapping
-
-		"	reflectedLight.directSpecular += irradiance * BRDF_Specular_BlinnPhong( directLight, geometry, material.specularColor, material.specularShininess ) * material.specularStrength;",
-		"}",
-		// ---- MMD specific for toon mapping
-		"#define RE_Direct	RE_Direct_BlinnMMD",
-		// ---- MMD specific for toon mapping
-
-		"void main()",
-
-	].join( "\n" ) )
-
-};
 
 THREE.MMDAudioManager = function ( audio, listener, p ) {
 
@@ -4011,15 +4016,7 @@ THREE.MMDGrantSolver.prototype = {
 
 };
 
-THREE.MMDHelper = function ( renderer ) {
-
-	this.renderer = renderer;
-
-	this.outlineEffect = null;
-
-	this.effect = null;
-
-	this.autoClear = true;
+THREE.MMDHelper = function () {
 
 	this.meshes = [];
 
@@ -4027,28 +4024,16 @@ THREE.MMDHelper = function ( renderer ) {
 	this.doIk = true;
 	this.doGrant = true;
 	this.doPhysics = true;
-	this.doOutlineDrawing = true;
 	this.doCameraAnimation = true;
 
 	this.audioManager = null;
 	this.camera = null;
-
-	this.init();
 
 };
 
 THREE.MMDHelper.prototype = {
 
 	constructor: THREE.MMDHelper,
-
-	init: function () {
-
-		this.outlineEffect = new THREE.OutlineEffect( this.renderer );
-
-		var size = this.renderer.getSize();
-		this.setSize( size.width, size.height );
-
-	},
 
 	add: function ( mesh ) {
 
@@ -4068,23 +4053,6 @@ THREE.MMDHelper.prototype = {
 
 		// workaround until I make IK and Physics Animation plugin
 		this.initBackupBones( mesh );
-
-	},
-
-	setSize: function ( width, height ) {
-
-		this.outlineEffect.setSize( width, height );
-
-	},
-
-	/*
-	 * Note: There may be a possibility that Outline wouldn't work well with Effect.
-	 *       In such a case, try to set doOutlineDrawing = false or
-	 *       manually comment out renderer.clear() in *Effect.render().
-	 */
-	setEffect: function ( effect ) {
-
-		this.effect = effect;
 
 	},
 
@@ -4471,138 +4439,6 @@ THREE.MMDHelper.prototype = {
 		}
 
 	},
-
-	render: function ( scene, camera ) {
-
-		if ( this.effect === null ) {
-
-			if ( this.doOutlineDrawing ) {
-
-				this.outlineEffect.autoClear = this.autoClear;
-				this.outlineEffect.render( scene, camera );
-
-			} else {
-
-				var currentAutoClear = this.renderer.autoClear;
-				this.renderer.autoClear = this.autoClear;
-				this.renderer.render( scene, camera );
-				this.renderer.autoClear = currentAutoClear;
-
-			}
-
-		} else {
-
-			var currentAutoClear = this.renderer.autoClear;
-			this.renderer.autoClear = this.autoClear;
-
-			if ( this.doOutlineDrawing ) {
-
-				this.renderWithEffectAndOutline( scene, camera );
-
-			} else {
-
-				this.effect.render( scene, camera );
-
-			}
-
-			this.renderer.autoClear = currentAutoClear;
-
-		}
-
-	},
-
-	/*
-	 * Currently(r82 dev) there's no way to render with two Effects
-	 * then attempt to get them to coordinately run by myself.
-	 *
-	 * What this method does
-	 * 1. let OutlineEffect make outline materials (only once)
-	 * 2. render normally with effect
-	 * 3. set outline materials
-	 * 4. render outline with effect
-	 * 5. restore original materials
-	 */
-	renderWithEffectAndOutline: function ( scene, camera ) {
-
-		var hasOutlineMaterial = false;
-
-		function checkIfObjectHasOutlineMaterial ( object ) {
-
-			if ( object.material === undefined ) return;
-
-			if ( object.userData.outlineMaterial !== undefined ) hasOutlineMaterial = true;
-
-		}
-
-		function setOutlineMaterial ( object ) {
-
-			if ( object.material === undefined ) return;
-
-			if ( object.userData.outlineMaterial === undefined ) return;
-
-			object.userData.originalMaterial = object.material;
-
-			object.material = object.userData.outlineMaterial;
-
-		}
-
-		function restoreOriginalMaterial ( object ) {
-
-			if ( object.material === undefined ) return;
-
-			if ( object.userData.originalMaterial === undefined ) return;
-
-			object.material = object.userData.originalMaterial;
-
-		}
-
-		return function renderWithEffectAndOutline( scene, camera ) {
-
-			hasOutlineMaterial = false;
-
-			var forceClear = false;
-
-			scene.traverse( checkIfObjectHasOutlineMaterial );
-
-			if ( ! hasOutlineMaterial ) {
-
-				this.outlineEffect.render( scene, camera );
-
-				forceClear = true;
-
-				scene.traverse( checkIfObjectHasOutlineMaterial );
-
-			}
-
-			if ( hasOutlineMaterial ) {
-
-				this.renderer.autoClear = this.autoClear || forceClear;
-
-				this.effect.render( scene, camera );
-
-				scene.traverse( setOutlineMaterial );
-
-				var currentShadowMapEnabled = this.renderer.shadowMap.enabled;
-
-				this.renderer.autoClear = false;
-				this.renderer.shadowMap.enabled = false;
-
-				this.effect.render( scene, camera );
-
-				this.renderer.shadowMap.enabled = currentShadowMapEnabled;
-
-				scene.traverse( restoreOriginalMaterial );
-
-			} else {
-
-				this.outlineEffect.autoClear = this.autoClear || forceClear;
-				this.outlineEffect.render( scene, camera );
-
-			}
-
-		}
-
-	}(),
 
 	poseAsVpd: function ( mesh, vpd, params ) {
 
