@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - glTF</title>
+		<meta charset="utf-8">
+	</head>
+
+	<script src="https://rawgit.com/mrdoob/three.js/dev/build/three.js"></script>
+	<script src="https://rawgit.com/mrdoob/three.js/dev/examples/js/controls/OrbitControls.js"></script>
+	<script src="https://rawgit.com/mrdoob/three.js/dev/examples/js/loaders/GLTFLoader.js"></script>
+
+	<script>
+
+		var container;
+		var renderer;
+		var scene;
+		var camera;
+		var controls;
+		var mixer;
+		var clock;
+
+		var plane;
+		var skin;
+
+		function init() {
+
+			renderer = new THREE.WebGLRenderer( { antialias: true } );
+			renderer.setClearColor( 0xaaaaaa );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+			container = document.getElementById( 'container' );
+			container.appendChild( renderer.domElement );
+
+			scene = new THREE.Scene();
+
+			camera = new THREE.PerspectiveCamera( 45, container.offsetWidth / container.offsetHeight, 1, 20000 );
+			camera.position.set( 2, 2, 2 );
+
+			controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+			var ambientLight = new THREE.AmbientLight( 0x222222 );
+			scene.add( ambientLight );
+
+			var spotLight = new THREE.SpotLight( 0xffffff, 1 );
+			spotLight.position.set( 10, 20, 10 );
+			spotLight.angle = 0.25;
+			spotLight.distance = 1024;
+			spotLight.penumbra = 0.75;
+			scene.add( spotLight );
+
+			var directionalLight = new THREE.DirectionalLight( 0xdddddd );
+			directionalLight.position.set( 0, 0, 1 ).normalize();
+			scene.add( directionalLight );
+
+			clock = new THREE.Clock();
+
+			var loader = new THREE.GLTFLoader();
+
+			loader.load( './handsWithPlane.gltf', function ( gltf ) {
+
+				var object = gltf.scene !== undefined ? gltf.scene : gltf.scenes[ 0 ];
+
+				var animations = gltf.animations;
+
+				if ( animations && animations.length ) {
+
+					mixer = new THREE.AnimationMixer( object );
+
+					for ( var i = 0; i < animations.length; i ++ ) {
+
+						var animation = animations[ i ];
+
+						mixer.clipAction( animation ).play();
+
+					}
+
+				}
+
+				skin = object.children[ 0 ].children[ 0 ].children[ 0 ];
+				plane = object.children[ 0 ].children[ 12 ].children[ 0 ];
+
+				// Try to comment out or run on the console one of them.
+
+				// 1. separate material
+				/*
+				plane.material = plane.material.clone();
+				plane.material.skinning = false;
+				plane.material.needsUpdate = true;
+				*/
+
+				// 2. set skeleton to plane
+				/*
+				var originalBones = skin.skeleton.bones;
+				var bones = [];
+
+				for ( var i = 0, il = originalBones.length; i < il; i ++ ) {
+
+					var bone = new THREE.Bone();
+					bones.push( bone );
+					plane.add( bone );
+
+				}
+
+				plane.updateMatrixWorld( true );
+				plane.skeleton = new THREE.Skeleton( bones, undefined, false );
+				plane.skeleton.update();
+				*/
+
+				// 3. set skin attributes and skeleton to plane
+				/*
+				var bones = [];
+				var bone = new THREE.Bone();
+				bones.push( bone );
+				plane.add( bone );
+				plane.updateMatrixWorld( true );
+				plane.skeleton = new THREE.Skeleton( bones, undefined, false );
+				plane.skeleton.update();
+
+				plane.geometry.addAttribute( 'skinIndex', new THREE.BufferAttribute( new Float32Array( 4 * 4 ), 4 ) );
+				plane.geometry.addAttribute( 'skinWeight', new THREE.BufferAttribute( new Float32Array( 4 * 4 ), 4 ) );
+
+				var array = plane.geometry.attributes.skinWeight.array;
+
+				for ( var i = 0, il = array.length; i < il; i ++ ) {
+
+					array[ i ] = i % 4 === 0 ? 1 : 0;
+
+				}
+				*/
+
+				scene.add( object );
+
+			} );
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+			onWindowResize();
+
+			animate();
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = container.offsetWidth / container.offsetHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		}
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			if ( mixer ) mixer.update( clock.getDelta() );
+
+			THREE.GLTFLoader.Shaders.update( scene, camera );
+
+			controls.update();
+
+			render();
+
+		}
+
+		function render() {
+
+			renderer.render( scene, camera );
+
+		}
+	</script>
+
+	<body onload="init()">
+		<div id="container"></div>
+	</body>
+</html>
