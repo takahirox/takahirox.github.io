@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js skin animation bug</title>
+		<meta charset="utf-8">
+	</head>
+
+	<script src="https://rawgit.com/mrdoob/three.js/dev/build/three.js"></script>
+	<script src="https://rawgit.com/mrdoob/three.js/dev/examples/js/controls/OrbitControls.js"></script>
+
+	<script>
+
+		var container;
+		var renderer;
+		var scene;
+		var camera;
+		var controls;
+		var clock;
+
+		var plane;
+		var skin;
+
+		function init() {
+
+			renderer = new THREE.WebGLRenderer( { antialias: true } );
+			renderer.setClearColor( 0xaaaaaa );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+			container = document.getElementById( 'container' );
+			container.appendChild( renderer.domElement );
+
+			scene = new THREE.Scene();
+
+			camera = new THREE.PerspectiveCamera( 45, container.offsetWidth / container.offsetHeight, 1, 20000 );
+			camera.position.set( 0, 0, 30 );
+
+			controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+			var ambientLight = new THREE.AmbientLight( 0x222222 );
+			scene.add( ambientLight );
+
+			var spotLight = new THREE.SpotLight( 0xffffff, 1 );
+			spotLight.position.set( 10, 20, 10 );
+			spotLight.angle = 0.25;
+			spotLight.distance = 1024;
+			spotLight.penumbra = 0.75;
+			scene.add( spotLight );
+
+			var directionalLight = new THREE.DirectionalLight( 0xdddddd );
+			directionalLight.position.set( 0, 0, 1 ).normalize();
+			scene.add( directionalLight );
+
+			clock = new THREE.Clock();
+
+			function createSkinGeometry() {
+
+				var geometry = new THREE.PlaneBufferGeometry( 5, 5 );
+
+				var bones = [
+					{
+						parent: -1,
+						name: 'bone0',
+						pos: [ 0, 0, 0 ],
+						rotq: [ 0, 0, 0, 1 ],
+						scl: [ 1, 1, 1 ]
+					},
+					{
+						parent: 0,
+						name: 'bone1',
+						pos: [ 0, 0, 0 ],
+						rotq: [ 0, 0, 0, 1 ],
+						scl: [ 1, 1, 1 ]
+					}
+				];
+
+				var indices = [
+					0, 1, 0, 0,
+					0, 1, 0, 0,
+					0, 1, 0, 0,
+					0, 1, 0, 0
+				];
+
+				var weights = [
+					1, 0, 0, 0,
+					1, 0, 0, 0,
+					1, 0, 0, 0,
+					1, 0, 0, 0
+				];
+
+				geometry.bones = bones;
+				geometry.addAttribute( 'skinIndex', new THREE.BufferAttribute( new Float32Array( indices ), 4 ) );
+				geometry.addAttribute( 'skinWeight', new THREE.BufferAttribute( new Float32Array( weights ), 4 ) );
+
+				return geometry;
+
+			}
+
+			function createPlaneGeometry() {
+
+				return new THREE.PlaneBufferGeometry( 5, 5 );
+
+			}
+
+			var material = new THREE.MeshPhongMaterial( { side: THREE.DoubleSide } );
+
+			skin = new THREE.SkinnedMesh( createSkinGeometry(), material );
+			skin.position.x = 10;
+			scene.add( skin );
+
+			plane = new THREE.Mesh( createPlaneGeometry(), material );
+			plane.position.x = -10;
+			scene.add( plane );
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+			onWindowResize();
+
+			animate();
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = container.offsetWidth / container.offsetHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		}
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			if ( skin ) {
+
+				skin.skeleton.bones[ 0 ].rotation.x += clock.getDelta();
+
+			}
+
+			controls.update();
+
+			render();
+
+		}
+
+		function render() {
+
+			renderer.render( scene, camera );
+
+		}
+	</script>
+
+	<body onload="init()">
+		<div id="container"></div>
+	</body>
+</html>
