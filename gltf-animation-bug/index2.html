@@ -102,7 +102,7 @@
 
 			}
 
-			var material = new THREE.MeshPhongMaterial( { side: THREE.DoubleSide } );
+			var material = new THREE.MeshPhongMaterial( { side: THREE.DoubleSide, skinning: true } );
 
 			skin = new THREE.SkinnedMesh( createSkinGeometry(), material );
 			skin.position.x = 10;
