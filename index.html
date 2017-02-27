@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Takahiro's portfolio</title>
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+
+			body {
+				background-color: #ffffff;
+				margin: 0px;
+				font-size: 15px;
+				line-height: 18px;
+				color: #555;
+			}
+
+			h1 {
+				margin-top: 30px;
+				margin-bottom: 30px;
+				margin-left: 20px;
+				font-size: 25px;
+				font-weight: normal;
+			}
+
+			h2 {
+				color: #999;
+				font-size: 18px;
+				font-weight: normal;
+
+				margin-top: 5px;
+				margin-bottom: 30px;
+			}
+
+			hr {
+				border: 0px;
+				height: 1px;
+				background-color: #ccc;
+				margin: 30px 0px;
+			}
+
+			a {
+				color: #2194CE;
+				text-decoration: none;
+			}
+
+			a:hover {
+				text-decoration: underline;
+			}
+
+			#panel {
+				position: fixed;
+				left: 0px;
+				top: 0px;
+				bottom: 0px;
+				width: 180px;
+				background: #ffffff;
+			}
+
+				#panel #content {
+					padding: 0px 20px;
+				}
+
+				#panel img {
+					outline: 1px solid #ccc;
+				}
+
+				#panel #book {
+					text-align: center;
+					margin-top: 15px;
+				}
+
+			#viewer {
+				position: absolute;
+				top: 0px;
+				right: 0px;
+				left: 180px;
+				padding: 28px 20px;
+			}
+
+				#viewer #portfolio img {
+					outline: 1px solid #ccc;
+					width: 400px;
+					height: 300px;
+				}
+
+				#viewer #portfolio img.wide {
+					width: 600px;
+				}
+
+				#viewer #portfolio h3 {
+					color: #999;
+					font-size: 15px;
+					font-weight: normal;
+
+					margin-top: 30px;
+					margin-bottom: 10px;
+				}
+
+			#mmdlicense {
+				font-size: 15px;
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<div id="panel" class="collapsed">
+			<h1>Takahiro</h1>
+
+			<div id="content">
+				Software Engineer<br /><br />
+				<a href="https://www.linkedin.com/in/takahiro-aoyagi-41a10a96" target="_blank">LinkedIn</a><br />
+				<a href="./resume.txt" target="_blank">Resume</a><br />
+				<a href="https://twitter.com/superhoge" target="_blank">Twitter @superhoge</a><br />
+				<a href="https://github.com/takahirox" target="_blank">GitHub @takahirox</a><br />
+				<a href="http://d.hatena.ne.jp/takahirox" target="_blank">Blog</a><br /><br />
+
+				<a href="https://github.com/mrdoob/three.js/graphs/contributors" target="_blank">Three.js contributor</a><br />
+				<a href="https://github.com/aframevr/aframe/graphs/contributors" target="_blank">A-Frame contributor</a><br />
+
+				<hr />
+
+				<div id="book">
+					<h2>publications</h2>
+					<a href="https://gihyo.jp/book/2013/978-4-7741-5464-0" target="_blank"><img src="images/oscodereading.png" width="100" height="132" /></a>
+					<a href="https://www.oreilly.co.jp/books/9784873117706/" target="_blank"><img src="images/threejs2nd.png" width="100" height="132" /></a>
+				</div>
+			</div>
+		</div>
+
+		<div id="viewer">
+
+			<h2>portfolio <a id="mmdlicense" href="https://github.com/mrdoob/three.js/blob/dev/examples/models/mmd/Readme.txt" target="_blank">(MMD assets License)</a></h2>
+
+			<div id="portfolio">
+
+				<h3>Three.js official</h3>
+				<a href="https://threejs.org/examples/#webgl_loader_mmd" title="Three.js MMDLoader" target="_blank"><img src="images/mmdloader.png"></a>
+				<a href="https://threejs.org/examples/#webgl_materials_variations_toon" title="Three.js MeshToonMaterial" target="_blank"><img src="images/toonmaterial.png"></a>
+				<a href="https://threejs.org/examples/#webgldeferred_animation" title="Three.js WebGLDeferredRenderer" target="_blank"><img src="images/deferred.png"></a>
+				<a href="https://threejs.org/examples/#webgl_loader_gltf" title="Three.js GLTFLoader" target="_blank"><img src="images/gltfloader.png"></a>
+
+				<h3>A-Frame component</h3>
+				<a href="https://github.com/takahirox/a-mmd" title="A-Frame MMD component" target="_blank"><img src="images/aframemmd.png"></a>
+				<a href="https://github.com/takahirox/aframe-rain" title="A-Frame Rain effect component" target="_blank"><img src="images/aframerain.png"></a>
+				<a href="https://github.com/takahirox/aframe-outline" title="A-Frame Outline effect component" target="_blank"><img src="images/aframeoutline.png"></a>
+				<a href="https://github.com/takahirox/aframe-deferred-renderer" title="A-Frame Deferred Renderer component" target="_blank"><img src="images/aframedeferred.png"></a>
+
+				<h3>Shader, Physics, Interactive</h3>
+				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_music_live" title="MMD Music live" target="_blank"><img src="images/mmdmusiclive.png"></a>
+				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_water" title="MMD Water simulation" target="_blank"><img src="images/mmdwater.png"></a>
+				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_physics" title="MMD Physics simulation" target="_blank"><img src="images/mmdphysics.png"></a>
+				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_interactive" title="MMD interactive app" target="_blank"><img src="images/mmdinteractive.png"></a>
+				<a href="http://glslsandbox.com/e#32080" title="Ray marching" target="_blank"><img src="images/raymarching.png"></a>
+
+				<h3>Raw WebGL, WebRTC</h3>
+				<a href="https://github.com/takahirox/mmd-viewer-js" title="MMD Viewer with raw WebGL" target="_blank"><img src="images/mmdviewer.png"></a>
+				<a href="https://github.com/takahirox/toho-like-js" title="Touhou Style Danmaku shooter with raw WebGL" target="_blank"><img src="images/toholikejs.png"></a>
+				<a href="https://github.com/takahirox/toho-like-js" title="Touhou Style Danmaku shooter with raw WebGL and WebRTC" target="_blank"><img src="images/toholikejswebrtc.png" class="wide"></a>
+
+				<h3>Emulator</h3>
+				<a href="https://github.com/takahirox/pdp11-js" title="UNIX V6 on PDP-11 emulator" target="_blank"><img src="images/pdp11emu.png"></a>
+				<a href="https://github.com/takahirox/nes-js" title="NES(Famicom) emulator" target="_blank"><img src="images/nesemu.png"></a>
+
+			</div>
+
+		</div>
+
+	</body>
+</html>
