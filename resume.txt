@@ -9,38 +9,49 @@ Portfolio: http://takahirox.github.io
 --------------------------------
 SUMMARY
 
-I'm very passionate about technology. I really like solving complex technical
-problems.
+Senior software engineer who is very passionate about technology, likes solving
+difficult problems, and loves learning from each other. My background includes
+strong knowledge of back-end with 3DCG engine, Operating System, Databases,
+Servers, and Processors.
 
-My career began as a processor designer. I got some patents, for example on
-high speed cell reading circuit, to tackle challenging problems.
+- Experienced with writing performant JavaScript, C, and C++
+- Got patents to solve challenging problems
+- Published UNIX text used in some college OS courses
+- Contributing to Three.js/A-Frame (OSS JavaScript 3D/VR libs)
+  as one of key developers
+- Aggressively sharing my knowledge and works with the communities
 
-And also, I studied UNIX deep level and published a UNIX kernel text used
-in some college OS courses.
+--------------------------------
+SKILLS
 
-Some years ago, I came to the US to take a new challenge. I've been working on
-In-memory database with chip-level optimization.
+JavaScript, C, C++, WebGL, Three.js, A-Frame, VR, WebVR,
+Optimization, Operating Systems, Databases, Processors, Memory
 
-More recently, I'm really excited to work on Web 3DCG because it's a very hot
-and new challenging technology. I've been contributing to Three.js project in
-my freetime for a year and am one of key contributors, top 10% over 100
-contributors, now. 
+--------------------------------
+PUBLICATIONS
 
-And also I've been working on A-Frame as one of core developers to extend Web
-3DCG potential to VR. I had a talk at A-Frame official meetup.
+はじめてのOSコードリーディング
+Introduction to OS source code reading
+https://gihyo.jp/book/2013/978-4-7741-5464-0
+
+初めてのThree.js 第2版 (付録寄稿)
+Japanese translation of Learning Three.js 2nd edition
+(Appendix contribution)
+https://www.oreilly.co.jp/books/9784873117706/
 
 --------------------------------
 EXPERIENCE
 
-Senior software engineer
-Fujitsu Technology and Business of America, Inc. 2/2013 to Present
+Senior software engineer 2/2013 to Present
+Fujitsu Technology and Business of America, Inc. Sunnyvale, CA
 
-Working on the In-Memory database project which enables fast big data analyze
-with Oracle.
+Working on the Oracle In-Memory database project which enables fast big data
+analysis.
 
-Developed Fujitsu M10 server specific library for Oracle In-Memory Database
-which made the use of M10 processor SWoC(Software on Chip) especially SIMD and
-achieved 100x better OLAP performance compared to the traditional database.
+Developed Fujitsu M10 server specific library with C/C++ for Oracle In-Memory
+Database which made the use of M10 processor SWoC(Software on Chip) especially
+SIMD and achieved 100x better OLAP performance compared to the traditional
+database.
 
 Press Releases
 
@@ -49,8 +60,8 @@ http://www.oracle.com/technetwork/database/in-memory/overview/twp-inmem-on-m10-e
 http://www.fujitsu.com/global/products/computing/servers/unix/sparc/technology/performance/software-on-chip.html
 
 -----
-Hardware Engineer
-Fujitsu Limited. 6/2007 to 2/2013
+Hardware Engineer 6/2007 to 2/2013
+Fujitsu Limited. Kanagawa Japan
 
 Worked on high-end server processor design.
 
@@ -65,8 +76,8 @@ which requires high energy-efficiency. Got four patents to improve memory
 capacity and enegy efficiency.
 
 -----
-CMOS Researcher
-Fujitsu Laboratories, Ltd. 4/2006 to 5/2007
+Hardware Researcher 4/2006 to 5/2007
+Fujitsu Laboratories, Ltd. Kanagawa Japan
 
 Researched how to reduce power consumption of processor by using sleep
 transistor.
@@ -77,20 +88,3 @@ EDUCATION
 Tokyo Institute of Technology
 Computer Science Master's degree 2004 to 2006
 
---------------------------------
-SKILLS
-
-JavaScript, C, C++, WebGL, Three.js, A-Frame, VR, WebVR,
-Optimization, Databases, Processors, Memory, Operating Systems,
-
---------------------------------
-PUBLICATIONS
-
-はじめてのOSコードリーディング
-Introduction to OS source code reading
-https://gihyo.jp/book/2013/978-4-7741-5464-0
-
-初めてのThree.js 第2版 (付録寄稿)
-Japanese translation of Learning Three.js 2nd edition
-(Appendix contribution)
-https://www.oreilly.co.jp/books/9784873117706/
