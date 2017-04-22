@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	</head>
+
+	<body>
+		<script src="../build/three.js"></script>
+		<script src="js/controls/OrbitControls.js"></script>
+
+		<script src="js/shaders/CopyShader.js"></script>
+
+		<script src="js/postprocessing/EffectComposer.js"></script>
+		<script src="js/postprocessing/SSAARenderPass.js"></script>
+		<script src="js/postprocessing/RenderPass.js"></script>
+		<script src="js/postprocessing/MaskPass.js"></script>
+		<script src="js/postprocessing/ShaderPass.js"></script>
+
+		<script>
+
+			var container;
+
+			var mesh, camera, scene, renderer;
+			var composer, copyPass, ssaaRenderPass;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			var clock = new THREE.Clock();
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.001, 10 );
+				camera.position.z = 1.5;
+
+				// scene
+
+				scene = new THREE.Scene();
+
+				var directionalLight = new THREE.DirectionalLight( 0xffffff );
+				directionalLight.position.set( 0, 0, 1 ).normalize();
+				scene.add( directionalLight );
+
+				//
+
+				renderer = new THREE.WebGLRenderer( { antialias: false } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor( new THREE.Color( 0xffffff ) );
+				container.appendChild( renderer.domElement );
+
+				// model
+
+				var geometry = new THREE.CylinderBufferGeometry( 0.1, 0.1, 0.5, 256 );
+				var material = new THREE.MeshStandardMaterial();
+				mesh = new THREE.Mesh( geometry, material );
+				material.color.setRGB( 0, 0, 0 );
+				material.metalness = 1;
+				material.roughness = 0;
+				scene.add( mesh );
+
+				// postprocessing
+
+				composer = new THREE.EffectComposer( renderer );
+
+				ssaaRenderPass = new THREE.SSAARenderPass( scene, camera, 0xFFFFFF, 1.0 );
+				composer.addPass( ssaaRenderPass );
+
+				copyPass = new THREE.ShaderPass( THREE.CopyShader );
+				copyPass.renderToScreen = true;
+				composer.addPass( copyPass );
+
+				var controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.update();
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				var pixelRatio = renderer.getPixelRatio();
+				var newWidth  = Math.floor( window.innerWidth / pixelRatio ) || 1;
+				var newHeight = Math.floor( window.innerHeight / pixelRatio ) || 1;
+				composer.setSize( newWidth, newHeight );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+			}
+
+			function render() {
+
+				composer.render();
+
+			}
+
+		</script>
+
+	</body>
+</html>
