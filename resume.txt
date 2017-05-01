@@ -11,11 +11,11 @@ SUMMARY
 
 Senior software engineer who is very passionate about technology, likes solving
 difficult problems, and loves learning from each other. My background includes
-strong knowledge of back-end with 3DCG engine, Operating System, Databases,
+strong knowledge of back-end with 3DCG engine, Operating Systems, Databases,
 Servers, and Processors.
 
 - Experienced with writing performant JavaScript, C, and C++
-- Got patents to solve challenging problems
+- Obtained patents for solutions to challenging problems
 - Published UNIX text used in some college OS courses
 - Contributing to Three.js/A-Frame (OSS JavaScript 3D/VR libs)
   as one of key developers
@@ -45,13 +45,12 @@ EXPERIENCE
 Senior software engineer 2/2013 to Present
 Fujitsu Technology and Business of America, Inc. Sunnyvale, CA
 
-Working on the Oracle In-Memory database project which enables fast big data
-analysis.
+Working on the Oracle In-Memory database project which enables fast analysis of large databases.
 
 Developed Fujitsu M10 server specific library with C/C++ for Oracle In-Memory
 Database which made the use of M10 processor SWoC(Software on Chip) especially
-SIMD and achieved 100x better OLAP performance compared to the traditional
-database.
+SIMD and achieved 100x better OLAP performance compared to traditional
+databases.
 
 Press Releases
 
@@ -65,14 +64,14 @@ Fujitsu Limited. Kanagawa Japan
 
 Worked on high-end server processor design.
 
-Designed Multi port L1 data cache memory used in Supercomputer K which got
+Designed Multi port L1 data cache memory used in Supercomputer K which received
 first place on the TOP500 project in June 2011.
 
 Designed High-speed and High-density cache memory for Interconnect processor.
-Got a patent to achieve fast read and small area.
+Patented a technique for achieving fast read and small area.
 
 Designed LLC(Last level cache) memory controller used in Exascale Supercomputer
-which requires high energy-efficiency. Got four patents to improve memory
+which requires high energy-efficiency. Obtained four patents to improve memory
 capacity and enegy efficiency.
 
 -----
