@@ -4,21 +4,22 @@ Sunnyvale California, 99999 (dummy)
 aoyagi.takahiro@dummy.com (dummy)
 portfolio http://takahirox.github.io/
 
-Dear HR Manager:
+Dear Hiring Manager:
 
 I'm very interested in your [position-name] position.
 
-I am a WebGL/WebVR/Three.js/A-Frame software engineer. I've been contributing to
-Three.js and A-Frame projects as one of key developers. I am top 10 contributor
-of Three.js and have collaborator permission level of A-Frame now. Refer to my
-portfolio for my works.
+I am a WebGL/WebVR/Three.js/A-Frame software engineer. I contribute to the
+Three.js and A-Frame projects, and am a key developer in both. I am top 10
+contributor of Three.js and have collaborator permission level of A-Frame now.
+Refer to my portfolio for more of my work.
 
 I have strong JavaScript/C/C++ skills, especially performance tuning. On my
-current job with Oracle Database team, we've achieved 100x performance with
+current job with the Oracle Database team, we've achieved 100x performance with
 chip-level tuning.
 
 I really like solving difficult challenging problems, studying new things, and
 learning from each other. I got five patents to solve the problems on the job.
-And I published OS kernel source code text used in some college courses.
+My book, Introduction to OS Source Code Reading, is used in multiple colleges
+courses.
 
-I'm very looking forward to talking with you.
+I look forward very much to talking with you.
