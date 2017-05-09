@@ -10,8 +10,8 @@ Summary:
 - Aggressive open source projects contributor.
 --------------------------------------------------------------------------------
 Technical skills: (A-Z)
-C/C++, CSS, GLSL, JavaScript, HTML, Node.js, Oracle Database, Python, SPARC, SQL,
-UNIX, WebGL, WebRTC, WebSocket, WebVR
+C/C++, CSS, Git, GLSL, JavaScript, HTML, Node.js, Oracle Database, Python, SPARC,
+SQL, UNIX, WebGL, WebRTC, WebSocket, WebVR
 --------------------------------------------------------------------------------
 Open source:
 - Three.js: Top10 contributor over 100 contributors.
