@@ -80,11 +80,11 @@ Hardware Researcher - Fujitsu Laboratories, Ltd. Kanagawa Japan
 - Researched power saving CMOS circuit with sleep transistor
 --------------------------------------------------------------------------------
 Publications:
-- ‚Í‚¶‚ß‚Ä‚ÌOSƒR[ƒhƒŠ[ƒfƒBƒ“ƒO / ISBN 978-4-7741-5464-0
+- ã¯ã˜ã‚ã¦ã®OSã‚³ãƒ¼ãƒ‰ãƒªãƒ¼ãƒ‡ã‚£ãƒ³ã‚° / ISBN 978-4-7741-5464-0
   Introduction to OS source code reading
   https://gihyo.jp/book/2013/978-4-7741-5464-0
   Used in multiple colleges courses.
-- ‰‚ß‚Ä‚ÌThree.js ‘æ2”Å (•t˜^Šñe) / ISBN 978-4-87311-770-6
+- åˆã‚ã¦ã®Three.js ç¬¬2ç‰ˆ (ä»˜éŒ²å¯„ç¨¿) / ISBN 978-4-87311-770-6
   Japanese translation of Learning Three.js 2nd edition (Appendix contribution)
   https://www.oreilly.co.jp/books/9784873117706/
 --------------------------------------------------------------------------------
