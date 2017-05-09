@@ -1,89 +1,93 @@
-Takahiro Aoyagi
-somwehere, CA 99999 (dummy)
-555-555-5555 (dummy)
-takahiro.aoyagi@something.com (dummy)
-Linkedin:  https://www.linkedin.com/in/takahiro-aoyagi-41a10a96
-Github:    https://github.com/takahirox
+Takahiro Aoyagi / takahiro.aoyagi@something.com (dummy)
+somewehere, CA 99999 (dummy) / 555-555-5555 (dummy)
+LinkedIn:  https://www.linkedin.com/in/takahiro-aoyagi-41a10a96
+GitHub:    https://github.com/takahirox
 Portfolio: http://takahirox.github.io
+--------------------------------------------------------------------------------
+Summary:
+- Senior software engineer. Interested in low-layer, open source, performance,
+  web technologies, WebGL, and WebVR.
+- Aggressive open source projects contributor.
+--------------------------------------------------------------------------------
+Technical skills: (A-Z)
+C/C++, CSS, GLSL, JavaScript, HTML, Node.js, Oracle Database, Python, SPARC, SQL,
+UNIX, WebGL, WebRTC, WebSocket, WebVR
+--------------------------------------------------------------------------------
+Open source:
+- Three.js: Top10 contributor over 100 contributors.
+  Three.js is a most widely-used JavaScript graphics library.
+  Contributed ((*)Independently)
+  - loaders: MMD(*), glTF, FBX, binary parser for MMD and FBX(*)
+  - Cartoon: Toon Material(*), Outline Effect(*)
+  - PBR: Specular-Glossiness material of glTF 2.0(*)
+  - Renderer: Deferred Renderer
+  - Animation: CCD IK Solver(*), Physics for MMD(*), Audio-sync animation(*)
+  - Misc: bunch of bugs fix, Skeletal Animation maintenance
 
---------------------------------
-SUMMARY
+- A-Frame VR: Collaborator (Granted member)
+  A-Frame is a web framework on Three.js to make WebVR content.
+  Contributing Three.js related maintenance and bug fix.
+  Relased many components
+  - Rain effect: draws over 5000 rain drops with good performance by using 
+                 hardware instancing technique.
+  - MMD loader: loads MMD data and plays audio-sync animation with physics
+  - Outline effect: draws outline with face culling technique
+  - Deferred Rendering: renders many lights with good performance.
+  Had demo presentations at A-Frame meetup.
 
-Senior software engineer who is very passionate about technology, likes solving
-difficult problems, and loves learning from each other. My background includes
-strong knowledge of back-end with 3DCG engine, Operating Systems, Databases,
-Servers, and Processors.
+- Three.js MMDLoader sample applications: Owner
+  WebVR, Music live, Face tracking, HTML5 Speech Synthesis, Physics simulation,
+  Interactive, Post processing with GLSL, Water simulation with GPU, and so on.
 
-- Experienced with writing performant JavaScript, C, and C++
-- Obtained patents for solutions to challenging problems
-- Published UNIX text used in some college OS courses
-- Contributing to Three.js/A-Frame (OSS JavaScript 3D/VR libs)
-  as one of key developers
-- Aggressively sharing my knowledge and works with the communities
+- Touhou style game with JavaScript and raw WebGL/WebSocket/WebRTC: Owner.
+  A fan game of Touhou Project(Shooter game project of Team Shanghai Alice).
+  It's known for good performance, draws over 1000 elements in a scene with
+  WebGL and well-tuned JavaScript at 60fps on browser.
+  And it supports online coop play with WebSocket and WebRTC.
 
---------------------------------
-SKILLS
+- PDP-11 emulator with JavaScript: Owner.
+  It runs/debugs UNIX V6 on browser.
 
-JavaScript, C, C++, WebGL, Three.js, A-Frame, VR, WebVR,
-Optimization, Operating Systems, Databases, Processors, Memory
+- NES(Famicom) emulator with JavaScript and HTML5 canvas: Owner.
+- MMD viewer with JavaScript and raw WebGL: Owner.
+- NPM packages: Owner of MMD parser and charset encoder besides the 
+                A-Frame components. 
+--------------------------------------------------------------------------------
+Professional experience:
+Feb.2013 - 
+Software Engineer - Fujitsu Technology and Business of America, Inc. Sunnyvale, CA
+- Worked on the Oracle In-Memory database project which enables fast analysis of
+  TB-Scale datasets.
+- Led the C/C++ chip-level performance tuning project of Oracle inmemory database
+  library for Fujitsu SPARC/UNIX platform with Oracle database team, Fujitsu
+  compiler team, and Fujitsu processor team.
+- Achieved 100x better performance on SSB(Star Schema Benchmark) compared to
+  traditional databases.
 
---------------------------------
-PUBLICATIONS
+Jun.2007 - Feb.2013
+Hardware Engineer - Fujitsu Limited. Kanagawa Japan
+- Worked on high-end server processor. Designed and developed the modules of
+-- Multi port L1 cache memory used in Supercomputer K which received
+   first place on the TOP500 project in June 2011.
+-- High-speed and High-density cache memory for interconnect processor.
+   Patented a technique for archiving fast read and small area circuit.
+-- Last level cache memory controller for Exascale supercomputer.
+   Obtained four patents to improve memory capacity and energy efficiency.
+- Worked with SystemC, verilog, and SPICE
 
-„ÅØ„Åò„ÇÅ„Å¶„ÅÆOS„Ç≥„Éº„Éâ„É™„Éº„Éá„Ç£„É≥„Ç∞
-Introduction to OS source code reading
-https://gihyo.jp/book/2013/978-4-7741-5464-0
-
-Âàù„ÇÅ„Å¶„ÅÆThree.js Á¨¨2Áâà (‰ªòÈå≤ÂØÑÁ®ø)
-Japanese translation of Learning Three.js 2nd edition
-(Appendix contribution)
-https://www.oreilly.co.jp/books/9784873117706/
-
---------------------------------
-EXPERIENCE
-
-Senior software engineer 2/2013 to Present
-Fujitsu Technology and Business of America, Inc. Sunnyvale, CA
-
-Working on the Oracle In-Memory database project which enables fast analysis of large databases.
-
-Developed Fujitsu M10 server specific library with C/C++ for Oracle In-Memory
-Database which made the use of M10 processor SWoC(Software on Chip) especially
-SIMD and achieved 100x better OLAP performance compared to traditional
-databases.
-
-Press Releases
-
-http://www.oracle.com/technetwork/database/in-memory/overview/twp-inmem-on-m10-en-2714932.html
-
-http://www.fujitsu.com/global/products/computing/servers/unix/sparc/technology/performance/software-on-chip.html
-
------
-Hardware Engineer 6/2007 to 2/2013
-Fujitsu Limited. Kanagawa Japan
-
-Worked on high-end server processor design.
-
-Designed Multi port L1 data cache memory used in Supercomputer K which received
-first place on the TOP500 project in June 2011.
-
-Designed High-speed and High-density cache memory for Interconnect processor.
-Patented a technique for achieving fast read and small area.
-
-Designed LLC(Last level cache) memory controller used in Exascale Supercomputer
-which requires high energy-efficiency. Obtained four patents to improve memory
-capacity and enegy efficiency.
-
------
-Hardware Researcher 4/2006 to 5/2007
-Fujitsu Laboratories, Ltd. Kanagawa Japan
-
-Researched how to reduce power consumption of processor by using sleep
-transistor.
-
---------------------------------
-EDUCATION
-
-Tokyo Institute of Technology
-Computer Science Master's degree 2004 to 2006
-
+Apr.2006 - May.2007
+Hardware Researcher - Fujitsu Laboratories, Ltd. Kanagawa Japan
+- Researched power saving CMOS circuit with sleep transistor
+--------------------------------------------------------------------------------
+Publications:
+- ÇÕÇ∂ÇﬂÇƒÇÃOSÉRÅ[ÉhÉäÅ[ÉfÉBÉìÉO / ISBN 978-4-7741-5464-0
+  Introduction to OS source code reading
+  https://gihyo.jp/book/2013/978-4-7741-5464-0
+  Used in multiple colleges courses.
+- èâÇﬂÇƒÇÃThree.js ëÊ2î≈ (ïtò^äÒçe) / ISBN 978-4-87311-770-6
+  Japanese translation of Learning Three.js 2nd edition (Appendix contribution)
+  https://www.oreilly.co.jp/books/9784873117706/
+--------------------------------------------------------------------------------
+Education:
+Tokyo Institute of Technology, 2006 - Tokyo Japan
+M.S., Computer Science - Web technologies Lab
