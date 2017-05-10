@@ -5,8 +5,8 @@ GitHub:    https://github.com/takahirox
 Portfolio: http://takahirox.github.io
 --------------------------------------------------------------------------------
 Summary:
-- Senior software engineer. Interested in low-layer, open source, performance,
-  web technologies, WebGL, and WebVR.
+- Senior full-stack software engineer. Interested in low-layer, open source,
+  performance, web technologies, WebGL, and WebVR.
 - Aggressive open source projects contributor.
 --------------------------------------------------------------------------------
 Technical skills: (A-Z)
