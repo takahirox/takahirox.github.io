@@ -1,33 +1,32 @@
 Takahiro Aoyagi / takahiro.aoyagi@something.com (dummy)
-somewehere, CA 99999 (dummy) / 555-555-5555 (dummy)
+somewhere, CA 99999 (dummy) / 555-555-5555 (dummy)
 LinkedIn:  https://www.linkedin.com/in/takahiro-aoyagi-41a10a96
 GitHub:    https://github.com/takahirox
 Portfolio: http://takahirox.github.io
 --------------------------------------------------------------------------------
 Summary:
-- Senior full-stack software engineer. Interested in low-layer, open source,
+- Senior full-stack software engineer. Interested in low-level, open source,
   performance, web technologies, WebGL, and WebVR.
-- Aggressive open source projects contributor.
+- Aggressive open source contributor.
 --------------------------------------------------------------------------------
 Technical skills: (A-Z)
 C/C++, CSS, Git, GLSL, JavaScript, HTML, Node.js, Oracle Database, Python, SPARC,
 SQL, UNIX, WebGL, WebRTC, WebSocket, WebVR
 --------------------------------------------------------------------------------
 Open source:
-- Three.js: Top10 contributor over 100 contributors.
-  Three.js is a most widely-used JavaScript graphics library.
+- Three.js: Top 10 contributor out of 800 contributors
+  Three.js is the most widely-used JavaScript graphics library.
   Contributed ((*)Independently)
   - loaders: MMD(*), glTF, FBX, binary parser for MMD and FBX(*)
   - Cartoon: Toon Material(*), Outline Effect(*)
-  - PBR: Specular-Glossiness material of glTF 2.0(*)
+  - Physically-based rendering (PBR): Specular-Glossiness material of glTF 2.0(*)
   - Renderer: Deferred Renderer
-  - Animation: CCD IK Solver(*), Physics for MMD(*), Audio-sync animation(*)
-  - Misc: bunch of bugs fix, Skeletal Animation maintenance
+  - Animation: CCD IK Solver(*), Physics for MMD(*), Audio-sync animation(*),
+               Skeletal Animation
 
-- A-Frame VR: Collaborator (Granted member)
-  A-Frame is a web framework on Three.js to make WebVR content.
-  Contributing Three.js related maintenance and bug fix.
-  Relased many components
+- A-Frame VR: Collaborator and core contributor
+  A-Frame is a web framework for creating WebVR content.
+  Released many components
   - Rain effect: draws over 5000 rain drops with good performance by using 
                  hardware instancing technique.
   - MMD loader: loads MMD data and plays audio-sync animation with physics
@@ -35,22 +34,22 @@ Open source:
   - Deferred Rendering: renders many lights with good performance.
   Had demo presentations at A-Frame meetup.
 
-- Three.js MMDLoader sample applications: Owner
+- Three.js MMDLoader sample applications: Author
   WebVR, Music live, Face tracking, HTML5 Speech Synthesis, Physics simulation,
   Interactive, Post processing with GLSL, Water simulation with GPU, and so on.
 
-- Touhou style game with JavaScript and raw WebGL/WebSocket/WebRTC: Owner.
+- Touhou style game with JavaScript and raw WebGL/WebSocket/WebRTC: Author
   A fan game of Touhou Project(Shooter game project of Team Shanghai Alice).
   It's known for good performance, draws over 1000 elements in a scene with
   WebGL and well-tuned JavaScript at 60fps on browser.
   And it supports online coop play with WebSocket and WebRTC.
 
-- PDP-11 emulator with JavaScript: Owner.
-  It runs/debugs UNIX V6 on browser.
+- PDP-11 emulator with JavaScript: Author
+  Runs/Debugs UNIX V6 on browser.
 
-- NES(Famicom) emulator with JavaScript and HTML5 canvas: Owner.
-- MMD viewer with JavaScript and raw WebGL: Owner.
-- NPM packages: Owner of MMD parser and charset encoder besides the 
+- NES(Famicom) emulator with JavaScript and HTML5 canvas: Author
+- MMD viewer with JavaScript and raw WebGL: Author
+- NPM packages: Author of MMD parser and charset encoder besides the 
                 A-Frame components. 
 --------------------------------------------------------------------------------
 Professional experience:
@@ -58,7 +57,7 @@ Feb.2013 -
 Software Engineer - Fujitsu Technology and Business of America, Inc. Sunnyvale, CA
 - Worked on the Oracle In-Memory database project which enables fast analysis of
   TB-Scale datasets.
-- Led the C/C++ chip-level performance tuning project of Oracle inmemory database
+- Led the C/C++ chip-level performance tuning project of Oracle in-memory database
   library for Fujitsu SPARC/UNIX platform with Oracle database team, Fujitsu
   compiler team, and Fujitsu processor team.
 - Achieved 100x better performance on SSB(Star Schema Benchmark) compared to
