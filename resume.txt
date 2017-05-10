@@ -68,7 +68,8 @@ Jun.2007 - Feb.2013
 Hardware Engineer - Fujitsu Limited. Kanagawa Japan
 - Worked on high-end server processor. Designed and developed the modules of
 -- Multi port L1 cache memory used in Supercomputer K which received
-   first place on the TOP500 project in June 2011.
+   first place on the TOP500 project in June 2011. Individually made automated
+   timing library build system and shared with the team.
 -- High-speed and High-density cache memory for interconnect processor.
    Patented a technique for archiving fast read and small area circuit.
 -- Last level cache memory controller for Exascale supercomputer.
