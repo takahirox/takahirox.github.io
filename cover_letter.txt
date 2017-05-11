@@ -1,25 +1,53 @@
-Takahiro Aoyagi
-Sunnyvale California, 99999 (dummy)
-555-555-5555 (dummy)
-aoyagi.takahiro@dummy.com (dummy)
-portfolio http://takahirox.github.io/
+Takahiro Aoyagi / aoyagi.takahiro@dummy.com (dummy)
+Sunnyvale, CA 99999 (dummy) / 555-555-5555 (dummy)
+Portfolio http://takahirox.github.io
+LinkedIn: https://www.linkedin.com/in/takahiro-aoyagi-41a10a96/
+GitHub: https://github.com/takahirox
 
-Dear Hiring Manager:
+Dear Hiring manager,
 
-I'm very interested in your [position-name] position.
+I'm very interested in your [position name] position.
 
-I am a WebGL/WebVR/Three.js/A-Frame software engineer. I contribute to the
-Three.js and A-Frame projects, and am a key developer in both. I am top 10
-contributor of Three.js and have collaborator permission level of A-Frame now.
-Refer to my portfolio for more of my work.
+I'm a full-stack software engineer, interested in web technologies, 
+and an aggressive open source contributor.
 
-I have strong JavaScript/C/C++ skills, especially performance tuning. On my
-current job with the Oracle Database team, we've achieved 100x performance with
-chip-level tuning.
+I will be an asset to your organization because your listed requirements closely
+match my background and skills. Highlight
+- Proficient in JavaScript, C/C++, and server side script languages
+- Three.js https://threejs.org top 10 contributor
+  (the most widely-used open-source JavaScript graphics library) 
+- A-Frame VR https://aframe.io collaborator working closely to core members
+  (an open-source web framework for creating WebVR content)
+- Highly skilled in performance tuning with front/back-end and hardware knowledge
+- M.S., Computer Science
+
+[why interest you and motivation]
+
+I look forward very much to talking with you.
+
+
+Sincerely,
+
+Takahiro
+
+----------------------------------------------------------------------------------
+
+Memo randum
+
+- Proficient in JavaScript, C/C++, and server side script languages
+- Three.js https://threejs.org top 10 contributor
+  (the most widely-used open-source JavaScript graphics library) 
+- A-Frame VR https://aframe.io collaborator working closely to core members
+  (an open-source web framework for creating WebVR content)
+- Highly skilled in performance tuning with front/back-end and hardware knowledge
+- M.S., Computer Science
+- Published a book
+- Obtained patents
+- FireFox contribution experience
 
 I really like solving difficult challenging problems, studying new things, and
 learning from each other. I got five patents to solve the problems on the job.
 My book, Introduction to OS Source Code Reading, is used in multiple colleges
 courses.
 
-I look forward very much to talking with you.
+
