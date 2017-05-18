@@ -1,0 +1,185 @@
+<html>
+<head>
+<title>Barcode marker example with MMD + Three.js</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<style>
+html,body {
+	margin: 5;
+	padding: 5;
+	width: 100%;
+	text-align: center;
+	overflow-x: hidden;
+}
+.portrait canvas {
+	transform-origin: 0 0;
+	transform: rotate(-90deg) translateX(-100%);
+}
+.desktop canvas {
+ 	transform: scale(-1, 1);
+}
+</style>
+</head>
+<body>
+
+<h1>Barcode marker example with MMD + Three.js</h1>
+<p>On Chrome on Android, tap the screen to start playing video stream.</p>
+<p>Show <a href="https://github.com/artoolkit/artoolkit5/blob/master/doc/patterns/Matrix%20code%203x3%20(72dpi)/20.png" target="_blank">3x3 marker id 20</a> to camera to display Miku on top of it. <a href="https://twitter.com/superhoge/status/865086527990149120" target="_blank">Demo video</a></p>
+
+<p><a href="http://takahirox.github.io/" target="_blank">Author Takahiro</a></p>
+
+<p>
+MMD Assets Copyright<br />
+<a href="https://github.com/mrdoob/three.js/tree/master/examples/models/mmd#readme" target="_blank">License</a>
+<a href="http://www.geocities.jp/higuchuu4/index_e.htm" target="_blank">Model</a>
+<a href="http://www.nicovideo.jp/watch/sm13147122" target="_blank">Dance</a>
+<a href="http://www.nicovideo.jp/watch/sm11938255" target="_blank">Audio</a>
+</p>
+
+<p>
+Libs
+<a href="https://threejs.org/" target="_blank">Three.js</a>
+<a href="https://github.com/artoolkit/jsartoolkit5" target="_blank">jsartoolkit5</a>
+</p>
+
+<script src="../build/artoolkit.debug.js"></script>
+<script src="../js/artoolkit.api.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/build/three.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/examples/js/libs/mmdparser.min.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/examples/js/libs/ammo.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/examples/js/loaders/TGALoader.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/examples/js/loaders/MMDLoader.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/examples/js/effects/OutlineEffect.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/examples/js/animation/CCDIKSolver.js"></script>
+<script async src="https://rawgit.com/mrdoob/three.js/dev/examples/js/animation/MMDPhysics.js"></script>
+<script async src="../js/artoolkit.three.js"></script>
+
+<script>
+
+window.ARThreeOnLoad = function() {
+
+	ARController.getUserMediaThreeScene({maxARVideoSize: 320, cameraParam: 'Data/camera_para-iPhone 5 rear 640x480 1.0m.dat', 
+	onSuccess: function(arScene, arController, arCamera) {
+
+		document.body.className = arController.orientation;
+
+		arController.setPatternDetectionMode(artoolkit.AR_MATRIX_CODE_DETECTION);
+
+		var clock = new THREE.Clock();
+
+		var renderer = new THREE.WebGLRenderer({antialias: true});
+		if (arController.orientation === 'portrait') {
+			var w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
+			var h = window.innerWidth;
+			renderer.setSize(w, h);
+			renderer.domElement.style.paddingBottom = (w-h) + 'px';
+		} else {
+			if (/Android|mobile|iPad|iPhone/i.test(navigator.userAgent)) {
+				renderer.setSize(window.innerWidth, (window.innerWidth / arController.videoWidth) * arController.videoHeight);
+			} else {
+				renderer.setSize(arController.videoWidth, arController.videoHeight);
+				document.body.className += ' desktop';
+			}
+		}
+		document.body.insertBefore(renderer.domElement, document.body.firstChild);
+
+		var markerRoot = arController.createThreeBarcodeMarker(20);
+
+		arScene.scene.add(markerRoot);
+
+		// outline
+
+		var effect = new THREE.OutlineEffect(renderer);
+
+		// this is a trick to draw outline correctly(?)
+		arScene.camera.projectionMatrix.elements[15] = 0.001;
+
+		// light
+
+		var ambient = new THREE.AmbientLight( 0x666666 );
+		arScene.scene.add( ambient );
+
+		var directionalLight = new THREE.DirectionalLight( 0x887766 );
+		directionalLight.position.set( -1, 1, 1 ).normalize();
+		arScene.scene.add( directionalLight );
+
+		// model, dance, audio
+
+		var modelFile = 'https://rawgit.com/mrdoob/three.js/dev/examples/models/mmd/miku/miku_v2.pmd';
+		var vmdFiles = ['https://rawgit.com/mrdoob/three.js/dev/examples/models/mmd/vmds/wavefile_v2.vmd'];
+		var audioFile = 'https://rawgit.com/mrdoob/three.js/dev/examples/models/mmd/audios/wavefile_short.mp3';
+		var audioParams = {delayTime: 160 * 1 / 30};
+
+		var onProgress = function(xhr) {
+			if (xhr.lengthComputable) {
+				var percentComplete = xhr.loaded / xhr.total * 100;
+				console.log( Math.round(percentComplete, 2) + '% downloaded' );
+			}
+		};
+
+		var onError = function(xhr) {
+			console.error(xhr);
+		};
+
+		var helper = new THREE.MMDHelper();
+
+		var loader = new THREE.MMDLoader();
+		loader.setTextureCrossOrigin('anonymous');
+
+		var ready = false;
+
+		var mesh;
+
+		loader.load(modelFile, vmdFiles, function(object) {
+			mesh = object;
+			helper.add(mesh);
+			helper.setAnimation(mesh);
+			helper.setPhysics(mesh);
+			loader.loadAudio(audioFile, function (audio, listener) {
+				listener.position.z = 1;
+				helper.setAudio(audio, listener, audioParams);
+				helper.unifyAnimationDuration();
+				arScene.scene.add(audio);
+				arScene.scene.add(listener);
+				markerRoot.add(mesh);
+				ready = true;
+			}, onProgress, onError);
+		}, onProgress, onError);
+
+		var tick = function() {
+			arScene.process();
+			if (ready) {
+				// this is a trick to let Physics go correctly
+				// with scale and rotation setting
+				mesh.scale.set(1.0, 1.0, 1.0);
+				var parent = mesh.parent;
+				parent.remove(mesh);
+				mesh.rotation.x = 0;
+				mesh.updateMatrixWorld(true);
+
+				helper.animate(clock.getDelta());
+
+				mesh.rotation.x = 60 * Math.PI / 180;
+				mesh.scale.set(0.1, 0.1, 0.1);
+				parent.add(mesh);
+				mesh.updateMatrixWorld(true);
+			}
+			arScene.renderOn(effect);
+			requestAnimationFrame(tick);
+		};
+
+		tick();
+
+	}});
+
+	delete window.ARThreeOnLoad;
+
+};
+
+if (window.ARController && ARController.getUserMediaThreeScene) {
+	ARThreeOnLoad();
+}
+
+</script>
+
+</body>
+</html>
