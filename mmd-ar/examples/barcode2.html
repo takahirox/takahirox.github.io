@@ -1,0 +1,263 @@
+<html>
+<head>
+<title>Barcode marker example with Physics + Three.js</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<style>
+html,body {
+	margin: 5;
+	padding: 5;
+	width: 100%;
+	text-align: center;
+	overflow-x: hidden;
+}
+.portrait canvas {
+	transform-origin: 0 0;
+	transform: rotate(-90deg) translateX(-100%);
+}
+.desktop canvas {
+ 	transform: scale(-1, 1);
+}
+</style>
+</head>
+<body>
+
+<h1>Barcode marker example with Physics + Three.js</h1>
+<p>On Chrome on Android, tap the screen to start playing video stream.</p>
+<p>Show <a href="https://github.com/artoolkit/artoolkit5/blob/master/doc/patterns/Matrix%20code%203x3%20(72dpi)/20.png" target="_blank">3x3 marker id 20</a> to camera to display your blue ball on top of it. <a href="https://twitter.com/superhoge/status/865400470105280512" target="_blank">Demo video</a></p>
+
+<p><a href="http://takahirox.github.io/" target="_blank">Author Takahiro</a></p>
+
+<p>
+Libs
+<a href="https://threejs.org/" target="_blank">Three.js</a>
+<a href="https://github.com/artoolkit/jsartoolkit5" target="_blank">jsartoolkit5</a>
+<a href="https://github.com/kripken/ammo.js/" target="_blank">ammo.js</a>
+</p>
+
+<script src="../build/artoolkit.debug.js"></script>
+<script src="../js/artoolkit.api.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/dev/build/three.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/dev/examples/js/libs/ammo.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/dev/examples/js/effects/OutlineEffect.js"></script>
+<script src="../js/artoolkit.three.js"></script>
+
+<script>
+
+window.ARThreeOnLoad = function() {
+
+	ARController.getUserMediaThreeScene({maxARVideoSize: 320, cameraParam: 'Data/camera_para-iPhone 5 rear 640x480 1.0m.dat', 
+	onSuccess: function(arScene, arController, arCamera) {
+
+		document.body.className = arController.orientation;
+
+		arController.setPatternDetectionMode(artoolkit.AR_MATRIX_CODE_DETECTION);
+
+		var clock = new THREE.Clock();
+
+		var renderer = new THREE.WebGLRenderer({antialias: true});
+		if (arController.orientation === 'portrait') {
+			var w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
+			var h = window.innerWidth;
+			renderer.setSize(w, h);
+			renderer.domElement.style.paddingBottom = (w-h) + 'px';
+		} else {
+			if (/Android|mobile|iPad|iPhone/i.test(navigator.userAgent)) {
+				renderer.setSize(window.innerWidth, (window.innerWidth / arController.videoWidth) * arController.videoHeight);
+			} else {
+				renderer.setSize(arController.videoWidth, arController.videoHeight);
+				document.body.className += ' desktop';
+			}
+		}
+		document.body.insertBefore(renderer.domElement, document.body.firstChild);
+
+		var markerRoot = arController.createThreeBarcodeMarker(20);
+
+		arScene.scene.add(markerRoot);
+
+		// outline
+
+		var effect = new THREE.OutlineEffect(renderer);
+
+		// this is a trick to draw outline correctly(?)
+		arScene.camera.projectionMatrix.elements[15] = 0.001;
+
+		// light
+
+		var ambient = new THREE.AmbientLight( 0x666666 );
+		arScene.scene.add( ambient );
+
+		var directionalLight = new THREE.DirectionalLight( 0x887766 );
+		directionalLight.position.set( -1, -1, 1 ).normalize();
+		arScene.scene.add( directionalLight );
+
+		// physics
+
+		var world;
+
+		var initWorld = function() {
+			var config = new Ammo.btDefaultCollisionConfiguration();
+			var dispatcher = new Ammo.btCollisionDispatcher(config);
+			var cache = new Ammo.btDbvtBroadphase();
+			var solver = new Ammo.btSequentialImpulseConstraintSolver();
+			world = new Ammo.btDiscreteDynamicsWorld(dispatcher, cache, solver, config);
+			world.setGravity(new Ammo.btVector3(0, 0, 0));
+		};
+
+		var createPlane = function(vec1, vec2) {
+			var body = createBoxRigidBody(vec1, 0, vec2, 1.0);
+			body.setRestitution(1);
+			body.setFriction(1);
+			body.setDamping(0, 0);
+			body.setSleepingThresholds(0, 0);
+			world.addRigidBody(body);
+		};
+
+		var initWall = function() {
+			createPlane(new THREE.Vector3(1000, 10, 1000), new THREE.Vector3( 0,  14,  0));
+			createPlane(new THREE.Vector3(1000, 10, 1000), new THREE.Vector3( 0, -14,  0));
+			createPlane(new THREE.Vector3(10, 1000, 1000), new THREE.Vector3( 15,  0,  0));
+			createPlane(new THREE.Vector3(10, 1000, 1000), new THREE.Vector3(-15,  0,  0));
+			createPlane(new THREE.Vector3(1000, 1000, 10), new THREE.Vector3( 0,  0,  20));
+			createPlane(new THREE.Vector3(1000, 1000, 10), new THREE.Vector3( 0,  0,  -5));
+		};
+
+		var stepSimulation = function(delta) {
+			var unitStep = 1 / 65;
+			var stepTime = delta;
+			var maxStepNum = ((delta / unitStep) | 0) + 1;
+			if (stepTime < unitStep) {
+				stepTime = unitStep;
+				maxStepNum = 1;
+			}
+			if (maxStepNum > 3) {
+				maxStepNum = 3;
+			}
+			world.stepSimulation(stepTime, maxStepNum, unitStep);
+		};
+
+		var createBoxRigidBody = function(size, weight, position, restitution) {
+			var shape = new Ammo.btBoxShape(new Ammo.btVector3(size.x, size.y, size.z));
+			return createRigidBody(shape, weight, position, restitution);
+		};
+
+		var createSphereRigidBody = function(size, weight, position, restitution) {
+			var shape = new Ammo.btSphereShape(size);
+			return createRigidBody(shape, weight, position, restitution);
+		};
+
+		var createRigidBody = function(shape, weight, position, restitution) {
+			var localInertia = new Ammo.btVector3(0, 0, 0);
+			shape.calculateLocalInertia(weight, localInertia);
+			var form = new Ammo.btTransform();
+			form.setIdentity();
+			form.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+			var state = new Ammo.btDefaultMotionState(form);
+			var info = new Ammo.btRigidBodyConstructionInfo(weight, state, shape, localInertia);
+			info.set_m_restitution(restitution);
+			return new Ammo.btRigidBody(info);
+		};
+
+		// mesh
+
+		var num = 150;
+		var meshes = [];
+
+		var createMeshes = function() {
+			var geometry = new THREE.SphereBufferGeometry(0.5);
+			var material = new THREE.MeshPhongMaterial({color: 0xFF0000});
+
+			for (var i = 0; i < num; i++) {
+				var mesh = new THREE.Mesh(geometry, material);
+				mesh.position.x = 2.0 * Math.random() - 1.0;
+				mesh.position.y = 2.0 * Math.random() - 1.0;
+				mesh.position.z = 5.0 * Math.random() + 1.0;
+				var body = createSphereRigidBody(0.5, 1.0, mesh.position, 1.0);
+				body.setSleepingThresholds(0, 0);
+				world.addRigidBody(body);
+				mesh.body = body;
+				mesh.ammoTransform = new Ammo.btTransform();
+				mesh.ammoQuaternion = new Ammo.btQuaternion(0, 0, 0, 1);
+				meshes.push(mesh);
+				arScene.scene.add(mesh);
+			}
+		};
+
+		var updateMeshes = function() {
+			for (var i = 0, il = meshes.length; i < il; i ++) {
+				var mesh = meshes[i];
+				var body = mesh.body;
+				var form = mesh.ammoTransform;
+				var q = mesh.ammoQuaternion;
+				body.getMotionState().getWorldTransform(form);
+				var o = form.getOrigin();
+				form.getBasis().getRotation(q);
+				mesh.position.set(o.x(), o.y(), o.z());
+				mesh.quaternion.set(q.x(), q.y(), q.z(), q.w());
+			}
+		}
+
+		var mesh;
+
+		var createMesh = function() {
+			mesh = new THREE.Mesh(
+				new THREE.SphereBufferGeometry(1.0),
+				new THREE.MeshPhongMaterial({color:0x0000FF})
+			);
+			var body = createSphereRigidBody(1.0, 1.0, mesh.position, 2.0);
+			body.setSleepingThresholds(0, 0);
+			world.addRigidBody(body);
+			mesh.body = body;
+			mesh.ammoTransform = new Ammo.btTransform();
+			mesh.ammoQuaternion = new Ammo.btQuaternion(0, 0, 0, 1);
+			markerRoot.add(mesh);
+		};
+
+		var updateTransform = function() {
+			var p = mesh.getWorldPosition();
+			var q = mesh.getWorldQuaternion();
+			var q2 = mesh.ammoQuaternion;
+			var tr = mesh.ammoTransform;
+			tr.getOrigin().setValue(p.x, p.y, p.z);
+			q2.setX(q.x);
+			q2.setY(q.y);
+			q2.setZ(q.z);
+			q2.setW(q.w);
+			tr.setRotation(q2);
+			mesh.body.setCenterOfMassTransform(tr);
+			mesh.body.getMotionState().setWorldTransform(tr);
+		};
+
+		initWorld();
+		initWall();
+		createMesh();
+		createMeshes();
+
+		var tick = function() {
+			arScene.process();
+			animate();
+			arScene.renderOn(effect);
+			requestAnimationFrame(tick);
+		};
+
+		var animate = function() {
+			updateTransform();
+			stepSimulation(clock.getDelta());
+			updateMeshes();
+		};
+
+		tick();
+
+	}});
+
+	delete window.ARThreeOnLoad;
+
+};
+
+if (window.ARController && ARController.getUserMediaThreeScene) {
+	ARThreeOnLoad();
+}
+
+</script>
+
+</body>
+</html>
