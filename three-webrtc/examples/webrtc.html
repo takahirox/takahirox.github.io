@@ -33,6 +33,7 @@
 
 		<script src="js/effects/OutlineEffect.js"></script>
 
+		<script src="js/controls/TransformControls.js"></script>
 		<script src="js/controls/FPControls.js"></script>
 		<script src="js/Detector.js"></script>
 		<script src="js/libs/stats.min.js"></script>
@@ -43,13 +44,10 @@
 
 			var clientId;
 
-			var camera, scene, renderer, effect, controls;
+			var camera, scene, renderer, effect, controls, transformControls;
 			var remoteSync;
 
-			var mouseX = 0, mouseY = 0;
-
-			var windowHalfX = window.innerWidth / 2;
-			var windowHalfY = window.innerHeight / 2;
+			var box;
 
 			var clock = new THREE.Clock();
 
@@ -70,6 +68,8 @@
 				remoteSync.addEventListener( 'connect', onConnect );
 				remoteSync.addEventListener( 'disconnect', onDisconnect );
 				remoteSync.addEventListener( 'receive', onReceive );
+				remoteSync.addEventListener( 'add', onAdd );
+				remoteSync.addEventListener( 'remove', onRemove );
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
@@ -110,6 +110,10 @@
 				// controls
 
 				controls = new THREE.FPControls( camera, renderer.domElement );
+
+				transformControls = new THREE.TransformControls( camera, renderer.domElement );
+				transformControls.addEventListener( 'change', render );
+				transformControls.setMode( 'translate' );
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -195,7 +199,19 @@
 					new THREE.PlaneBufferGeometry( 4.0, 1.0 ),
 					new THREE.MeshBasicMaterial( {
 						map: texture,
-						//color: 0xFFFFFF,
+						opacity: 0.8,
+						transparent: true
+					} )
+				);
+
+			}
+
+			function createBox() {
+
+				return new THREE.Mesh(
+					new THREE.BoxBufferGeometry( 2.0, 2.0, 2.0 ),
+					new THREE.MeshBasicMaterial( {
+						color: 0xFFFF00,
 						opacity: 0.8,
 						transparent: true
 					} )
@@ -204,9 +220,6 @@
 			}
 
 			function onWindowResize() {
-
-				windowHalfX = window.innerWidth / 2;
-				windowHalfY = window.innerHeight / 2;
 
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
@@ -231,6 +244,8 @@
 			function update() {
 
 				controls.update();
+				transformControls.update();
+
 				remoteSync.sync();
 
 			}
@@ -241,10 +256,6 @@
 
 			}
 
-			function onReceive( data ) {
-
-			}
-
 			function onOpen( id ) {
 
 				clientId = id;
@@ -252,9 +263,56 @@
 				document.getElementById( 'your_id' ).innerText = 'Your ID: ' + id;
 				document.getElementById( 'link' ).appendChild( createLink() );
 
-				remoteSync.addLocalObject( camera );
+				remoteSync.addLocalObject( camera, { type: 'camera' } );
+
+				box = createBox();
+				box.position.y = -10;
+				scene.add( box );
+
+				transformControls.attach( box );
+				scene.add( transformControls );
+
+				remoteSync.addLocalObject( box, { type: 'box' } );
 
 				connectFromURL();
+
+			}
+
+			function onReceive( data ) {
+
+			}
+
+			function onAdd( destId, component ) {
+
+				var objectId = component.id;
+				var info = component.info;
+
+				var mesh;
+
+				switch ( info.type ) {
+
+					case 'camera':
+						mesh = createModel( destId );
+						break;
+
+					case 'box':
+						mesh = createBox();
+						break;
+
+					default:
+						return;
+
+				}
+
+				scene.add( mesh );
+
+				remoteSync.addRemoteObject( destId, objectId, mesh );
+
+			}
+
+			function onRemove( destId, objectId, object ) {
+
+				if ( object.parent !== null ) object.parent.remove( object );
 
 			}
 
@@ -288,18 +346,11 @@
 
 			function onConnect( destId ) {
 
-				var mesh = createModel( destId );
-				scene.add( mesh );
-
-				remoteSync.addRemoteObject( destId, mesh );
-
 				showMessage( 'Connected with ' + destId );
 
 			}
 
 			function onDisconnect( destId, object ) {
-
-				if ( object.parent !== null ) object.parent.remove( object );
 
 				showMessage( 'Disconnected with ' + destId );
 

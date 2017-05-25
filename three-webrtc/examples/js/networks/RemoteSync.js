@@ -1,7 +1,15 @@
 ( function () {
 
-	var TRANSFER_TYPE_SYNC = 0;
-	var TRANSFER_TYPE_SNOOP = 1
+	var TRANSFER_TYPE_SNOOP = 0;
+	var TRANSFER_TYPE_SYNC = 1;
+	var TRANSFER_TYPE_ADD = 2;
+	var TRANSFER_TYPE_REMOVE = 3;
+
+	var TRANSFER_COMPONENT = {
+		id: '',
+		type: -1,
+		list: []
+	};
 
 	// TODO: support interpolation
 	// TODO: support packet loss recover for UDP
@@ -14,9 +22,13 @@
 
 		this.id = client.id;
 
-		this.localObjects = {};
-		this.remoteObjects = {};
-		this.transferComponents = {};
+		this.localObjects = [];
+		this.localObjectTable = {};
+		this.localObjectInfos = {};
+
+		this.transferComponentsSync = {};
+
+		this.remoteObjectTable = {};
 
 		this.onOpens = [];
 		this.onCloses = [];
@@ -24,6 +36,8 @@
 		this.onConnects = [];
 		this.onDisconnects = [];
 		this.onReceives = [];
+		this.onAdds = [];
+		this.onRemoves = [];
 
 		this.client.addEventListener( 'open', function( id ) { self.onOpen( id ); } );
 		this.client.addEventListener( 'close', function( id ) { self.onClose( id ); } );
@@ -35,6 +49,8 @@
 	};
 
 	Object.assign( THREE.RemoteSync.prototype, {
+
+		// public
 
 		addEventListener: function ( type, func ) {
 
@@ -64,6 +80,14 @@
 					this.onReceives.push( func );
 					break;
 
+				case 'add':
+					this.onAdds.push( func );
+					break;
+
+				case 'remove':
+					this.onRemoves.push( func );
+					break;
+
 				default:
 					console.log( 'THREE.RemoteSync.addEventListener: Unknown type ' + type );
 					break;
@@ -78,15 +102,109 @@
 
 		},
 
-		addLocalObject: function ( object ) {
+		addLocalObject: function ( object, info ) {
 
-			this.localObjects[ this.id ] = object;
+			if ( this.localObjectTable[ object.uuid ] !== undefined ) return;
+
+			if ( info === undefined ) info = {};
+
+			this.localObjectTable[ object.uuid ] = object;
+			this.localObjects.push( object );
+
+			this.localObjectInfos[ object.uuid ] = info;
+
+			this.transferComponentsSync[ object.uuid ] = {
+				id: object.uuid,
+				matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+			};
+
+			this.broadcastObjectAddition( object );
 
 		},
 
-		addRemoteObject: function ( id, object ) {
+		removeLocalObject: function ( object ) {
 
-			this.remoteObjects[ id ] = object;
+			delete this.localObjectTable[ object.uuid ];
+			delete this.transferComponentsSync[ object.uuid ];
+
+			var readIndex = 0;
+			var writeIndex = 0;
+
+			for ( var i = 0, il = this.localObjects.length; i < il; i ++ ) {
+
+				if ( this.localObjects[ i ] === object ) {
+
+					this.localObjects[ writeIndex ] = this.localObjects[ readIndex ];
+					writeIndex ++;
+
+				}
+
+				readIndex ++;
+
+			}
+
+			this.localObjects.length = writeIndex;
+
+			this.broadcastObjectRemoval( object );
+
+		},
+
+		addRemoteObject: function ( destId, objectId, object ) {
+
+			if ( this.remoteObjectTable[ destId ] === undefined ) this.remoteObjectTable[ destId ] = {};
+
+			var objects = this.remoteObjectTable[ destId ];
+
+			if ( objects[ objectId ] !== undefined ) return;
+
+			objects[ objectId ] = object;
+
+		},
+
+		sync: function ( force ) {
+
+			var component = TRANSFER_COMPONENT;
+			component.id = this.id;
+			component.type = TRANSFER_TYPE_SYNC;
+
+			var list = component.list;
+			list.length = 0;
+
+			for ( var i = 0, il = this.localObjects.length; i < il; i ++ ) {
+
+				var object = this.localObjects[ i ];
+
+				if ( force === true || this.checkUpdate( object ) ) {
+
+					list.push( this.serialize( object ) );
+
+				}
+
+			}
+
+			this.client.broadcast( component );
+
+		},
+
+		// private
+
+		removeRemoteObject: function ( destId, objectId ) {
+
+			if ( this.remoteObjectTable[ destId ] === undefined ) return;
+
+			var objects = this.remoteObjectTable[ destId ];
+
+			if ( objects[ objectId ] === undefined ) return;
+
+			var object = objects[ objectId ];
+
+			delete objects[ objectId ];
+
+			for ( var i = 0, il = this.onRemoves.length; i < il; i ++ ) {
+
+				this.onRemoves[ i ]( destId, objectId, object );
+
+			}
 
 		},
 
@@ -130,6 +248,8 @@
 
 			}
 
+			this.sendObjectsAddition( id );
+
 			this.sendSnoopList( id );
 
 			this.sync( true );
@@ -138,25 +258,113 @@
 
 		onDisconnect: function ( id ) {
 
-			var object = this.remoteObjects[ id ];
+			var objects = this.remoteObjectTable[ id ];
 
-			if ( object === undefined ) return;
+			if ( objects === undefined ) return;
 
 			for ( var i = 0, il = this.onDisconnects.length; i < il; i ++ ) {
 
-				this.onDisconnects[ i ]( id, object );
+				this.onDisconnects[ i ]( id );
 
 			}
 
-			delete this.remoteObjects[ id ];
+			var keys = Object.keys( objects );
+
+			for ( var i = 0, il = keys.length; i < il; i ++ ) {
+
+				this.removeRemoteObject( id, keys[ i ] );
+
+			}
 
 		},
 
-		checkUpdate: function ( id, object ) {
+		createObjectsAdditionComponent: function () {
 
-			var component = this.transferComponents[ id ];
+			var component = TRANSFER_COMPONENT;
+			component.id = this.id;
+			component.type = TRANSFER_TYPE_ADD;
 
-			if ( component === undefined ) return true;
+			var list = component.list;
+			list.length = 0;
+
+			for ( var i = 0, il = this.localObjects.length; i < il; i ++ ) {
+
+				var object = this.localObjects[ i ];
+				var info = this.localObjectInfos[ object.uuid ];
+
+				list.push( { id: object.uuid, info: info } );
+
+			}
+
+			return component;
+
+		},
+
+		createObjectAdditionComponent: function ( object ) {
+
+			var component = TRANSFER_COMPONENT;
+			component.id = this.id;
+			component.type = TRANSFER_TYPE_ADD;
+
+			var list = component.list;
+			list.length = 0;
+
+			var info = this.localObjectInfos[ object.uuid ];
+
+			list.push( { id: object.uuid, info: info } );
+
+			return component;
+
+		},
+
+		broadcastObjectAddition: function ( object ) {
+
+			this.client.broadcast( this.createObjectAdditionComponent( object ) );
+
+		},
+
+		sendObjectsAddition: function ( destId ) {
+
+			this.client.send( destId, this.createObjectsAdditionComponent() );
+
+		},
+
+		broadcastObjectsAddition: function () {
+
+			this.client.broadcast( this.createObjectsAdditionComponent() );
+
+		},
+
+		createObjectRemovalComponent: function ( object ) {
+
+			var component = TRANSFER_COMPONENT;
+			component.id = this.id;
+			component.type = TRANSFER_TYPE_REMOVE;
+
+			var list = component.list;
+			list.length = 0;
+
+			list.push( { id: object.uuid } );
+
+			return component;
+
+		},
+
+		sendObjectRemoval: function ( destId, object ) {
+
+			this.client.send( destId, this.createObjectRemovalComponent( object ) );
+
+		},
+
+		broadcastObjectRemoval: function ( object ) {
+
+			this.client.broadcast( this.createObjectRemovalComponent( object ) );
+
+		},
+
+		checkUpdate: function ( object ) {
+
+			var component = this.transferComponentsSync[ object.uuid ];
 
 			var array = component.matrix;
 			var array2 = object.matrix.elements;
@@ -171,22 +379,9 @@
 
 		},
 
-		serialize: function ( id, object ) {
+		serialize: function ( object ) {
 
-			if ( this.transferComponents[ id ] === undefined ) {
-
-				this.transferComponents[ id ] = {
-					type: TRANSFER_TYPE_SYNC,
-					id: id,
-					matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
-				};
-
-			}
-
-			var component = this.transferComponents[ id ];
-
-			component.type = TRANSFER_TYPE_SYNC;
-			component.id = id;
+			var component = this.transferComponentsSync[ object.uuid ];
 
 			var array = component.matrix;
 			var array2 = object.matrix.elements;
@@ -208,30 +403,50 @@
 
 		},
 
-		sync: function ( force ) {
+		onSync: function ( component ) {
 
-			if ( this.localObjects[ this.id ] === undefined ) return;
+			var destId = component.id;
+			var list = component.list;
 
-			if ( force === true || this.checkUpdate( this.id, this.localObjects[ this.id ] ) ) {
+			var objects = this.remoteObjectTable[ destId ];
 
-				this.client.broadcast( this.serialize( this.id, this.localObjects[ this.id ] ) );
+			if ( objects === undefined ) return;
+
+			for ( var i = 0, il = list.length; i < il; i ++ ) {
+
+				var object = objects[ list[ i ].id ];
+
+				if ( object === undefined ) continue;
+
+				this.deserialize( object, list[ i ] );
 
 			}
 
 		},
 
+		// TODO: temporal. Is this safe?
 		sendSnoopList: function ( id ) {
 
-			// TODO: temporal. Is this safe?
-			this.client.send( id, {
-				type: TRANSFER_TYPE_SNOOP,
-				id: this.id,
-				ids: Object.keys( this.client.connectionTable )
-			} );
+			var component = TRANSFER_COMPONENT;
+			component.id = this.id;
+			component.type = TRANSFER_TYPE_SNOOP;
+
+			var list = component.list;
+			list.length = 0;
+
+			for ( var i = 0, il = this.client.connections.length; i < il; i ++ ) {
+
+				list.push( this.client.connections[ i ].peer );
+
+			}
+
+			this.client.send( id, component );
 
 		},
 
-		snoop: function ( ids ) {
+		snoop: function ( component ) {
+
+			var ids = component.list;
 
 			for ( var i = 0, il = ids.length; i < il; i ++ ) {
 
@@ -249,15 +464,24 @@
 
 			switch ( component.type ) {
 
-				case TRANSFER_TYPE_SYNC:
-
-					var object = this.remoteObjects[ component.id ];
-					if ( object !== undefined ) this.deserialize( object, component );
-					break;
-
 				case TRANSFER_TYPE_SNOOP:
 
-					this.snoop( component.ids );
+					this.snoop( component );
+					break;
+
+				case TRANSFER_TYPE_SYNC:
+
+					this.onSync( component );
+					break;
+
+				case TRANSFER_TYPE_ADD:
+
+					this.onAdd( component );
+					break;
+
+				case TRANSFER_TYPE_REMOVE:
+
+					this.onRemove( component );
 					break;
 
 				default:
@@ -273,7 +497,49 @@
 
 			}
 
-		}
+		},
+
+		onAdd: function ( component ) {
+
+			var destId = component.id;
+			var list = component.list;
+
+			var objects = this.remoteObjectTable[ destId ];
+
+			for ( var i = 0, il = list.length; i < il; i ++ ) {
+
+				if ( objects === undefined || objects[ list[ i ].id ] === undefined ) {
+
+					for ( var j = 0, jl = this.onAdds.length; j < jl; j ++ ) {
+
+						this.onAdds[ j ]( destId, list[ i ] );
+
+					}
+
+				}
+
+			}
+
+		},
+
+		onRemove: function ( component ) {
+
+			var destId = component.id;
+			var list = component.list;
+
+			var objects = this.remoteObjectTable[ destId ];
+
+			if ( objects === undefined ) return;
+
+			for ( var i = 0, il = list.length; i < il; i ++ ) {
+
+				var objectId = list[ i ].id;
+
+				this.removeRemoteObject( destId, list[ i ].id );
+
+			}
+
+		},
 
 	} );
 
