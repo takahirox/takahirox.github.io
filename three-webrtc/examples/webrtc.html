@@ -115,7 +115,7 @@
 
 			}
 
-			function createModel() {
+			function createModel( id ) {
 
 				var face = new THREE.Mesh(
 					new THREE.SphereBufferGeometry( 2.0 ),
@@ -155,12 +155,51 @@
 				mouse.position.y = -1.0;
 				mouse.position.z = -1.5;
 
+				var plate = createNamePlate( id );
+				plate.position.y = 3.0;
+
+				var plate2 = plate.clone();
+				plate2.rotation.y = Math.PI;
+
 				face.add( eye1 );
 				face.add( eye2 );
 				face.add( nose );
 				face.add( mouse );
+				face.add( plate );
+				face.add( plate2 );
 
 				return face;
+
+			}
+
+			function createNamePlate( id ) {
+
+				var canvas = document.createElement( 'canvas' );
+				canvas.width = 128;
+				canvas.height = 32;
+				var ctx = canvas.getContext( '2d' );
+				ctx.font = '10pt Arial';
+				ctx.fillStyle = 'red';
+				ctx.fillRect( 0, 0, canvas.width, canvas.height );
+				ctx.fillStyle = 'white';
+				ctx.fillRect( 2, 2, canvas.width - 4, canvas.height - 4 );
+				ctx.fillStyle = 'black';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText( id, canvas.width / 2, canvas.height / 2 );
+
+				var texture = new THREE.Texture( canvas );
+				texture.needsUpdate = true;
+
+				return new THREE.Mesh(
+					new THREE.PlaneBufferGeometry( 4.0, 1.0 ),
+					new THREE.MeshBasicMaterial( {
+						map: texture,
+						//color: 0xFFFFFF,
+						opacity: 0.8,
+						transparent: true
+					} )
+				);
 
 			}
 
@@ -249,7 +288,7 @@
 
 			function onConnect( destId ) {
 
-				var mesh = createModel();
+				var mesh = createModel( destId );
 				scene.add( mesh );
 
 				remoteSync.addRemoteObject( destId, mesh );
