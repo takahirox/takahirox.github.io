@@ -28,7 +28,8 @@
 		<script src="http://cdn.peerjs.com/0.3/peer.min.js"></script>
 
 		<script src="../build/three.js"></script>
-		<script src="js/WebRTC.js"></script>
+		<script src="js/networks/WebRTC.js"></script>
+		<script src="js/networks/RemoteSync.js"></script>
 
 		<script src="js/effects/OutlineEffect.js"></script>
 
@@ -40,16 +41,10 @@
 
 			var container, stats;
 
-			var remotes = {};
 			var clientId;
-			var sendParam = {
-				id: '',
-				position: [ 0, 0, 0 ],
-				quaternion: [ 0, 0, 0, 1 ]
-			};
 
-			var camera, scene, renderer, effect;
-			var controls, webrtc;
+			var camera, scene, renderer, effect, controls;
+			var remoteSync;
 
 			var mouseX = 0, mouseY = 0;
 
@@ -63,26 +58,30 @@
 
 			function init() {
 
-				webrtc = new THREE.WebRTC( {
-					apikey: '04ptn6yveb1sv2t9',
-					onOpen: onOpen,
-					onConnect: onConnect,
-					onReceive: onReceive,
-					onClose: onClose,
-					onError: onError
-				} );
+				remoteSync = new THREE.RemoteSync(
+					new THREE.WebRTC( {
+						apikey: '04ptn6yveb1sv2t9',
+						debugLevel: 0,
+					} )
+				);
+				remoteSync.addEventListener( 'open', onOpen );
+				remoteSync.addEventListener( 'close', onClose );
+				remoteSync.addEventListener( 'error', onError );
+				remoteSync.addEventListener( 'connect', onConnect );
+				remoteSync.addEventListener( 'disconnect', onDisconnect );
+				remoteSync.addEventListener( 'receive', onReceive );
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
-
-				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.z = 30;
 
 				// scene
 
 				scene = new THREE.Scene();
 
-				var gridHelper = new THREE.PolarGridHelper( 30, 10 );
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.z = 30;
+
+				var gridHelper = new THREE.PolarGridHelper( 60, 20 );
 				gridHelper.position.y = -10;
 				scene.add( gridHelper );
 
@@ -193,8 +192,7 @@
 			function update() {
 
 				controls.update();
-
-				if ( checkChange( camera ) ) sendToPeer( camera );
+				remoteSync.sync();
 
 			}
 
@@ -204,99 +202,71 @@
 
 			}
 
-			// TODO: move sync logic to THREE.WebRTC
-
-			function checkChange( object ) {
-
-				if ( sendParam.position[ 0 ] !== object.position.x ||
-				     sendParam.position[ 1 ] !== object.position.y ||
-				     sendParam.position[ 2 ] !== object.position.z ||
-				     sendParam.quaternion[ 0 ] !== object.quaternion.x ||
-				     sendParam.quaternion[ 1 ] !== object.quaternion.y ||
-				     sendParam.quaternion[ 2 ] !== object.quaternion.z ||
-				     sendParam.quaternion[ 3 ] !== object.quaternion.w ) return true;
-
-				return false;
-
-			}
-
-			function sendToPeer( object ) {
-
-				if ( webrtc.connections.length === 0 ) return;
-
-				sendParam.position[ 0 ] = object.position.x;
-				sendParam.position[ 1 ] = object.position.y;
-				sendParam.position[ 2 ] = object.position.z;
-
-				sendParam.quaternion[ 0 ] = object.quaternion.x;
-				sendParam.quaternion[ 1 ] = object.quaternion.y;
-				sendParam.quaternion[ 2 ] = object.quaternion.z;
-				sendParam.quaternion[ 3 ] = object.quaternion.w;
-
-				webrtc.send( sendParam );
-
-			}
-
 			function onReceive( data ) {
-
-				var mesh = remotes[ data.id ];
-
-				if ( mesh === undefined ) return;
-
-				mesh.position.fromArray( data.position );
-				mesh.quaternion.fromArray( data.quaternion );
 
 			}
 
 			function onOpen( id ) {
 
-				var div = document.getElementById( 'your_id' );
-				div.innerText += 'Your ID: ' + id;
-
 				clientId = id;
 
-				sendParam.id = clientId;
+				document.getElementById( 'your_id' ).innerText = 'Your ID: ' + id;
+				document.getElementById( 'link' ).appendChild( createLink() );
+
+				remoteSync.addLocalObject( camera );
+
+				connectFromURL();
 
 			}
 
-			function onClose( id ) {
+			function createLink() {
 
-				var mesh = remotes[ id ];
+				var a = document.createElement( 'a' );
 
-				if ( mesh === undefined ) return;
+				var url = location.href;
+				var index = url.indexOf( '?' );
+				if ( index >= 0 ) url = url.slice( 0, index );
 
-				scene.remove( mesh );
+				a.href = url + '?' + clientId;
+				a.text = 'Share this link';
+				a.target = '_blank';
 
-				delete remotes[ id ];
+				return a;
 
-				showMessage( 'Disconnected with ' + id );
+			}
+
+			function onClose( destId ) {
+
+				showMessage( 'Disconnected with ' + destId );
 
 			}
 
 			function onError( error ) {
 
-				showMessage( 'Disconnected with ' + error );
+				showMessage( error );
 
 			}
 
 			function onConnect( destId ) {
 
 				var mesh = createModel();
-				remotes[ destId ] = mesh;
 				scene.add( mesh );
+
+				remoteSync.addRemoteObject( destId, mesh );
 
 				showMessage( 'Connected with ' + destId );
 
-				sendToPeer( camera );
+			}
+
+			function onDisconnect( destId, object ) {
+
+				if ( object.parent !== null ) object.parent.remove( object );
+
+				showMessage( 'Disconnected with ' + destId );
 
 			}
 
-			function connect() {
-
-				var input = document.getElementById( 'dest_id' );
-				var id = input.value.trim();
-
-				if ( id === '' ) return;
+			function connect( id ) {
 
 				if ( id === clientId ) {
 
@@ -308,17 +278,35 @@
 
 				var message = document.getElementById( 'message' );
 
-				if ( remotes[ id ] !== undefined ) {
+				showMessage( 'Connecting with ' + id );
 
-					showMessage( 'Already connected with ' + id );
+				remoteSync.connect( id );
 
-					return;
+			}
+
+			function connectFromURL() {
+
+				var url = location.href;
+				var index = url.indexOf( '?' );
+
+				if ( index >= 0 ) {
+
+					var id = url.slice( index + 1 );
+
+					connect( id );
 
 				}
 
-				showMessage( 'Connecting with ' + id );
+			}
 
-				webrtc.connect( id );
+			function connectFromForm() {
+
+				var input = document.getElementById( 'dest_id' );
+				var id = input.value.trim();
+
+				if ( id === '' ) return;
+
+				connect( id );
 
 				input.value = '';
 
@@ -335,11 +323,15 @@
 
 		<div id="info">
 			<div id="your_id"></div>
+			<div id="link"></div>
+			<!--
 			<div>
 				<input id="dest_id" type="text">
-				<input type="button" value="connect" onclick="connect()">
+				<input type="button" value="connect" onclick="connectFromForm()">
 			</div>
 			<div id="message">Enter remote user's id</div>
+			-->
+			<div id="message"></div>
 		</div>
 
 	</body>
