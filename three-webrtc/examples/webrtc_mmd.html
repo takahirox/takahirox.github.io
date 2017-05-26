@@ -21,15 +21,24 @@
 				display:block;
 			}
 			#info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+			.dg.a {
+				margin-right: 0px;
+			}
 		</style>
 	</head>
 
 	<body>
 		<script src="http://cdn.peerjs.com/0.3/peer.min.js"></script>
 
+		<script src="js/libs/ammo.js"></script>
+		<script src="js/libs/mmdparser.min.js"></script>
+
 		<script src="../build/three.js"></script>
 		<script src="js/networks/RemoteSync.js"></script>
 		<script src="js/networks/PeerJSClient.js"></script>
+
+		<script src="js/loaders/TGALoader.js"></script>
+		<script src="js/loaders/MMDLoader.js"></script>
 
 		<script src="js/effects/OutlineEffect.js"></script>
 
@@ -37,6 +46,7 @@
 		<script src="js/controls/FPControls.js"></script>
 		<script src="js/Detector.js"></script>
 		<script src="js/libs/stats.min.js"></script>
+		<script src="js/libs/dat.gui.min.js"></script>
 
 		<script>
 
@@ -111,7 +121,7 @@
 
 				transformControls = new THREE.TransformControls( camera, renderer.domElement );
 				transformControls.addEventListener( 'change', render );
-				transformControls.setMode( 'translate' );
+				transformControls.setMode( 'rotate' );
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -204,38 +214,59 @@
 
 			}
 
-			function createBox() {
-
-				return new THREE.Mesh(
-					new THREE.BoxBufferGeometry( 2.0, 2.0, 2.0 ),
-					new THREE.MeshBasicMaterial( {
-						color: 0xFFFF00,
-						opacity: 0.8,
-						transparent: true
-					} )
-				);
-
-			}
-
-			function createSphere() {
-
-				return new THREE.Mesh(
-					new THREE.SphereBufferGeometry( 2.0 ),
-					new THREE.MeshBasicMaterial( {
-						color: 0xFFFF00,
-						opacity: 0.8,
-						transparent: true
-					} )
-				);
-
-			}
-
 			function onWindowResize() {
 
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 
 				effect.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function initGui( mesh ) {
+
+				var gui = new dat.GUI( { width: 180 } );
+
+				var dictionary = mesh.morphTargetDictionary;
+
+				var controls = {};
+
+				var bones = gui.addFolder( 'Bones' );
+
+				function initControls () {
+
+					controls.bone = -1;
+
+				}
+
+				function initBones () {
+
+					var b = {};
+
+					for ( var i = 0, il = mesh.skeleton.bones.length; i < il; i ++ ) {
+
+						b[ mesh.skeleton.bones[ i ].name ] = i;
+
+					}
+
+					bones.add( controls, 'bone', b ).onChange( onChangeBone );
+
+				}
+
+				function onChangeBone() {
+
+					var index = parseInt( controls.bone );
+
+					transformControls.attach( mesh.skeleton.bones[ index ] );
+
+				}
+
+				initControls();
+				initBones();
+
+				onChangeBone();
+
+				bones.open();
 
 			}
 
@@ -276,31 +307,35 @@
 
 				remoteSync.addLocalObject( camera, { type: 'camera' } );
 
-/*
-				var box = createBox();
-				box.position.y = -10;
-				scene.add( box );
+				var loader = new THREE.MMDLoader();
 
-				transformControls.attach( box );
+				loader.loadModel( 'models/mmd/miku/miku_v2.pmd', function ( object ) {
 
-				remoteSync.addLocalObject( box, { type: 'box' } );
-*/
+					var mesh = object;
+					mesh.position.y = -10;
+					scene.add( mesh );
 
-				var sphere = createSphere();
-				sphere.position.y = -10;
-				scene.add( sphere );
+					var sid = 0;
 
-				transformControls.attach( sphere );
+					mesh.traverse( function ( obj ) {
 
-				remoteSync.addSharedObject( sphere, 0 );
+						remoteSync.addSharedObject( obj, sid++ );
+
+					} );
+
+					initGui( mesh );
+
+					connectFromURL();
+
+				} );
 
 				scene.add( transformControls );
-
-				connectFromURL();
 
 			}
 
 			function onReceive( data ) {
+
+				//console.log( data );
 
 			}
 

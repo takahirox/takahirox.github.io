@@ -11,8 +11,19 @@
 		list: []
 	};
 
+	var float32Value = new Float32Array( 1 );
+
+	function ensureFloat32( value ) {
+
+		float32Value[ 0 ] = value;
+		return float32Value[ 0 ];
+
+	}
+
 	// TODO: support interpolation
 	// TODO: support packet loss recover for UDP
+	// TODO: proper error handling
+	// TODO: optimize transfer component
 
 	THREE.RemoteSync = function ( client ) {
 
@@ -29,6 +40,12 @@
 		this.transferComponentsSync = {};
 
 		this.remoteObjectTable = {};
+
+		this.sharedObjects = [];
+		this.sharedObjectTable = {};
+		this.sharedObjectInfos = {};
+
+		this.masterTable = {};
 
 		this.onOpens = [];
 		this.onCloses = [];
@@ -98,6 +115,8 @@
 
 		connect: function ( destId ) {
 
+			this.masterTable[ destId ] = false;
+
 			this.client.connect( destId );
 
 		},
@@ -161,7 +180,50 @@
 
 		},
 
-		sync: function ( force ) {
+		addSharedObject: function ( object, id ) {
+
+			if ( this.sharedObjectTable[ id ] !== undefined ) return;
+
+			this.sharedObjectTable[ id ] = object;
+			this.sharedObjects.push( object );
+
+			this.transferComponentsSync[ object.uuid ] = {
+				id: object.uuid,
+				sid: id,
+				matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+			};
+
+		},
+
+		removeSharedObject: function ( id ) {
+
+			if ( this.sharedObjectTable[ id ] === undefined ) return;
+
+			var object = this.sharedObjectTable[ id ];
+
+			var readIndex = 0;
+			var writeIndex = 0;
+
+			for ( var i = 0, il = this.sharedObjects.length; i < il; i ++ ) {
+
+				if ( this.sharedObjects[ i ] === object ) {
+
+					this.sharedObjects[ writeIndex ] = this.sharedObjects[ readIndex ];
+					writeIndex ++;
+
+				}
+
+				readIndex ++;
+
+			}
+
+			this.sharedObjects.length = writeIndex;
+
+			delete this.sharedObjectTable[ id ];
+
+		},
+
+		sync: function ( force, onlyLocal ) {
 
 			var component = TRANSFER_COMPONENT;
 			component.id = this.id;
@@ -182,7 +244,23 @@
 
 			}
 
-			this.client.broadcast( component );
+			if ( onlyLocal !== true ) {
+
+				for ( var i = 0, il = this.sharedObjects.length; i < il; i ++ ) {
+
+					var object = this.sharedObjects[ i ];
+
+					if ( force === true || this.checkUpdate( object ) ) {
+
+						list.push( this.serialize( object ) );
+
+					}
+
+				}
+
+			}
+
+			if ( list.length > 0 ) this.client.broadcast( component );
 
 		},
 
@@ -242,6 +320,8 @@
 
 		onConnect: function ( id ) {
 
+			if ( this.masterTable[ id ] === undefined ) this.masterTable[ id ] = true;
+
 			for ( var i = 0, il = this.onConnects.length; i < il; i ++ ) {
 
 				this.onConnects[ i ]( id );
@@ -252,11 +332,13 @@
 
 			this.sendSnoopList( id );
 
-			this.sync( true );
+			this.sync( true, ! this.masterTable[ id ] );
 
 		},
 
 		onDisconnect: function ( id ) {
+
+			delete this.masterTable[ id ];
 
 			var objects = this.remoteObjectTable[ id ];
 
@@ -371,7 +453,7 @@
 
 			for ( var i = 0, il = array.length; i < il; i ++ ) {
 
-				if ( array[ i ] !== array2[ i ] ) return true;
+				if ( ensureFloat32( array[ i ] ) !== ensureFloat32( array2[ i ] ) ) return true;
 
 			}
 
@@ -388,7 +470,7 @@
 
 			for ( var i = 0, il = array.length; i < il; i ++ ) {
 
-				array[ i ] = array2[ i ];
+				array[ i ] = ensureFloat32( array2[ i ] );
 
 			}
 
@@ -410,15 +492,31 @@
 
 			var objects = this.remoteObjectTable[ destId ];
 
-			if ( objects === undefined ) return;
-
 			for ( var i = 0, il = list.length; i < il; i ++ ) {
 
-				var object = objects[ list[ i ].id ];
+				var objectId = list[ i ].id;
+				var sharedId = list[ i ].sid;
+
+				var object;
+
+				if ( sharedId !== undefined ) {
+
+					object = this.sharedObjectTable[ sharedId ];
+
+				} else {
+
+					if ( objects === undefined ) continue;
+
+					object = objects[ objectId ];
+
+				}
 
 				if ( object === undefined ) continue;
 
 				this.deserialize( object, list[ i ] );
+
+				// to update transfer component
+				if ( sharedId !== undefined ) this.serialize( object );
 
 			}
 
@@ -539,7 +637,147 @@
 
 			}
 
+		}
+
+	} );
+
+} )();
+
+( function () {
+
+	THREE.NetworkClient = function ( params ) {
+
+		if ( params === undefined ) params = {};
+
+		this.id = params.id !== undefined ? params.id : '';
+
+		this.onOpens = [];
+		this.onCloses = [];
+		this.onErrors = [];
+		this.onConnects = [];
+		this.onDisconnects = [];
+		this.onReceives = [];
+
+		if ( params.onOpen !== undefined ) this.addEventListener( 'open', params.onOpen );
+		if ( params.onClose !== undefined ) this.addEventListener( 'close', params.onClose );
+		if ( params.onError !== undefined ) this.addEventListener( 'error', params.onError );
+		if ( params.onConnect !== undefined ) this.addEventListener( 'connect', params.onConnect );
+		if ( params.onDisconnect !== undefined ) this.addEventListener( 'disconnect', params.onDisconnect );
+		if ( params.onReceive !== undefined ) this.addEventListener( 'receive', params.onReceive );
+
+	};
+
+	Object.assign( THREE.NetworkClient.prototype, {
+
+		// public
+
+		addEventListener: function ( type, func ) {
+
+			switch ( type ) {
+
+				case 'open':
+					this.onOpens.push( func );
+					break;
+
+				case 'close':
+					this.onCloses.push( func );
+					break;
+
+				case 'error':
+					this.onErrors.push( func )
+					break;
+
+				case 'connect':
+					this.onConnects.push( func )
+					break;
+
+				case 'disconnect':
+					this.onDisconnects.push( func );
+					break;
+
+				case 'receive':
+					this.onReceives.push( func );
+					break;
+
+				default:
+					console.log( 'THREE.NetworkClient.addEventListener: Unknown type ' + type );
+					break;
+
+			}
+
 		},
+
+		connect: function ( destId ) {},
+
+		send: function ( id, data ) {},
+
+		broadcast: function ( data ) {},
+
+		hasConnection: function ( id ) {},
+
+		connectionNum: function () {},
+
+		// private (protected)
+
+		onOpen: function ( id ) {
+
+			for ( var i = 0, il = this.onOpens.length; i < il; i ++ ) {
+
+				this.onOpens[ i ]( id );
+
+			}
+
+		},
+
+		onClose: function ( id ) {
+
+			for ( var i = 0, il = this.onCloses.length; i < il; i ++ ) {
+
+				this.onCloses[ i ]( id );
+
+			}
+
+		},
+
+		onError: function ( error ) {
+
+			for ( var i = 0, il = this.onErrors.length; i < il; i ++ ) {
+
+				this.onErrors[ i ]( error );
+
+			}
+
+		},
+
+		onConnect: function ( id ) {
+
+			for ( var i = 0, il = this.onConnects.length; i < il; i ++ ) {
+
+				this.onConnects[ i ]( id );
+
+			}
+
+		},
+
+		onDisconnect: function ( id ) {
+
+			for ( var i = 0, il = this.onDisconnects.length; i < il; i ++ ) {
+
+				this.onDisconnects[ i ]( id );
+
+			}
+
+		},
+
+		onReceive: function ( data ) {
+
+			for ( var i = 0, il = this.onReceives.length; i < il; i ++ ) {
+
+				this.onReceives[ i ]( data );
+
+			}
+
+		}
 
 	} );
 
