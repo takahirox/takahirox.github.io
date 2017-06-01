@@ -38,7 +38,8 @@
 		<script src="https://rawgit.com/mrdoob/three.js/r85/build/three.js"></script>
 
 		<script src="js/networks/RemoteSync.js"></script>
-		<script src="js/networks/FirebaseClient2.js"></script>
+		<script src="js/networks/FirebaseSignalingServer.js"></script>
+		<script src="js/networks/WebRTCClient.js"></script>
 		<script src="js/controls/FPControls.js"></script>
 
 		<script src="https://rawgit.com/mrdoob/three.js/r85/examples/js/effects/OutlineEffect.js"></script>
@@ -97,13 +98,15 @@
 			function init( stream ) {
 
 				remoteSync = new THREE.RemoteSync(
-					new THREE.FirebaseClient( {
-						authType: 'anonymous',
-						apiKey: 'AIzaSyAqWN_ei4A20qjnN5srZb4gzEVzgS8waHU',
-						authDomain: 'first-a1e1c.firebaseapp.com',
-						databaseURL: 'https://first-a1e1c.firebaseio.com',
-						stream: stream
-					} )
+					new THREE.WebRTCClient(
+						new THREE.FirebaseSignalingServer( {
+							authType: 'anonymous',
+							apiKey: 'AIzaSyAqWN_ei4A20qjnN5srZb4gzEVzgS8waHU',
+							authDomain: 'first-a1e1c.firebaseapp.com',
+							databaseURL: 'https://first-a1e1c.firebaseio.com',
+						} ),
+						{ stream: stream }
+					)
 				);
 				remoteSync.addEventListener( 'open', onOpen );
 				remoteSync.addEventListener( 'close', onClose );
