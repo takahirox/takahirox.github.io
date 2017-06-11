@@ -100,10 +100,10 @@
 				remoteSync = new THREE.RemoteSync(
 					new THREE.WebRTCClient(
 						new THREE.FirebaseSignalingServer( {
-							authType: 'anonymous',
+							authType: 'none',
 							apiKey: 'AIzaSyAqWN_ei4A20qjnN5srZb4gzEVzgS8waHU',
 							authDomain: 'first-a1e1c.firebaseapp.com',
-							databaseURL: 'https://first-a1e1c.firebaseio.com',
+							databaseURL: 'https://first-a1e1c.firebaseio.com'
 						} ),
 						{ stream: stream }
 					)
@@ -116,7 +116,7 @@
 				remoteSync.addEventListener( 'receive', onReceive );
 				remoteSync.addEventListener( 'add', onAdd );
 				remoteSync.addEventListener( 'remove', onRemove );
-				remoteSync.addEventListener( 'remotestream', onRemoteStream );
+				remoteSync.addEventListener( 'remote_stream', onRemoteStream );
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
@@ -353,10 +353,7 @@
 
 			}
 
-			function onAdd( destId, component ) {
-
-				var objectId = component.id;
-				var info = component.info;
+			function onAdd( destId, objectId, info ) {
 
 				var mesh;
 

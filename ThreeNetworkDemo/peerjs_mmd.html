@@ -65,10 +65,11 @@
 
 				remoteSync = new THREE.RemoteSync(
 					new THREE.PeerJSClient( {
-						apikey: '04ptn6yveb1sv2t9',
-						debugLevel: 0,
+						key: '04ptn6yveb1sv2t9',
+						debugLevel: 0
 					} )
 				);
+
 				remoteSync.addEventListener( 'open', onOpen );
 				remoteSync.addEventListener( 'close', onClose );
 				remoteSync.addEventListener( 'error', onError );
@@ -315,13 +316,7 @@
 					mesh.position.y = -10;
 					scene.add( mesh );
 
-					var sid = 0;
-
-					mesh.traverse( function ( obj ) {
-
-						remoteSync.addSharedObject( obj, sid++ );
-
-					} );
+					remoteSync.addSharedObject( mesh, 'shared', true );
 
 					initGui( mesh );
 
@@ -339,10 +334,7 @@
 
 			}
 
-			function onAdd( destId, component ) {
-
-				var objectId = component.id;
-				var info = component.info;
+			function onAdd( destId, objectId, info ) {
 
 				var mesh;
 

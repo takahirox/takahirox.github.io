@@ -56,7 +56,7 @@
 
 				remoteSync = new THREE.RemoteSync(
 					new THREE.PeerJSClient( {
-						apikey: '04ptn6yveb1sv2t9',
+						key: '04ptn6yveb1sv2t9',
 						debugLevel: 0,
 					} )
 				);
@@ -304,10 +304,7 @@
 
 			}
 
-			function onAdd( destId, component ) {
-
-				var objectId = component.id;
-				var info = component.info;
+			function onAdd( destId, objectId, info ) {
 
 				var mesh;
 
