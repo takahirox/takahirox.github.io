@@ -14,7 +14,7 @@ AR, C/C++, CSS, Git, GLSL, JavaScript, HTML, Node.js, Oracle Database, Python,
 SPARC, SQL, UNIX, WebGL, WebRTC, WebSocket, WebVR
 --------------------------------------------------------------------------------
 Open source:
-- Three.js: Top 10 contributor out of 800 contributors
+- Three.js: Collaborator and top 10 contributor out of 800 contributors
   Three.js is the most widely-used JavaScript graphics library.
   Contributed ((*)Independently)
   - loaders: MMD(*), glTF, FBX, binary parser for MMD and FBX(*)
@@ -91,3 +91,6 @@ Publications:
 Education:
 Tokyo Institute of Technology, 2006 - Tokyo Japan
 M.S., Computer Science - Web technologies Lab
+--------------------------------------------------------------------------------
+Honor & Award:
+Google Open Source Peer Bonus Oct.2017 as a Three.js contributor
