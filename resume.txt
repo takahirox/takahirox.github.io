@@ -1,8 +1,9 @@
-Takahiro Aoyagi / takahiro.aoyagi@something.com (dummy)
-somewhere, CA 99999 (dummy) / 555-555-5555 (dummy)
+Takahiro Aoyagi / ******@******.com (dummy)
+somewhere, CA ****** (dummy) / ***-***-**** (dummy)
 LinkedIn:  https://www.linkedin.com/in/takahiro-aoyagi-41a10a96
 GitHub:    https://github.com/takahirox
 Portfolio: https://takahirox.github.io
+Blog:      https://blog.mozvr.com/author/takahiro/
 --------------------------------------------------------------------------------
 Summary:
 - Senior full-stack software engineer. Interested in low-level, open source,
@@ -11,59 +12,22 @@ Summary:
 --------------------------------------------------------------------------------
 Technical skills: (A-Z)
 A-Frame, AR, Blender3D, C/C++, CSS, Database, Git, GLSL, glTF, JavaScript, HTML,
-Node.js, Operating System, Processors, Python, Rust, SQL, Three.js, UNIX, VR,
-WebAssembly, WebExtensions, WebGL, WebRTC, WebSocket, WebXR
---------------------------------------------------------------------------------
-Open source:
-- Three.js: Collaborator and top 10 contributor out of 800 contributors
-  Three.js is the most widely-used JavaScript graphics library.
-  Contributed ((*)Independently)
-  - loaders: MMD(*), glTF, FBX, binary parser for MMD and FBX(*)
-  - Cartoon: Toon Material(*), Outline Effect(*)
-  - Physically-based rendering (PBR): Specular-Glossiness material of glTF 2.0(*)
-  - Renderer: Deferred Renderer
-  - Animation: CCD IK Solver(*), Physics for MMD(*), Audio-sync animation(*),
-               Skeletal Animation
-
-- A-Frame VR: Collaborator and core contributor
-  A-Frame is a web framework for creating WebVR content.
-  Released many components
-  - Rain effect: draws over 5000 rain drops with good performance by using 
-                 hardware instancing technique.
-  - MMD loader: loads MMD data and plays audio-sync animation with physics
-  - Outline effect: draws outline with face culling technique
-  - Deferred Rendering: renders many lights with good performance.
-  Had demo presentations at A-Frame meetup.
-
-- Three.js MMDLoader sample applications: Author
-  WebVR, Music live, Face tracking, HTML5 Speech Synthesis, Physics simulation,
-  Interactive, Post processing with GLSL, Water simulation with GPU, and so on.
-
-- glTF-Blender-IO-materials-variants: Author
-
-- Touhou style game with JavaScript and raw WebGL/WebSocket/WebRTC: Author
-  A fan game of Touhou Project(Shooter game project of Team Shanghai Alice).
-  It's known for good performance, draws over 1000 elements in a scene with
-  WebGL and well-tuned JavaScript at 60fps on browser.
-  And it supports online coop play with WebSocket and WebRTC.
-
-- RISC-V emulator written in Rust + WebAssembly: Author
-- NES(Famicom) emulator written in Rust: Author
-- PDP-11 emulator with JavaScript: Author
-- MMD viewer with JavaScript and raw WebGL: Author
-
+Node.js, Operating System, Processors, Python, RISC-V, Rust, SQL, Three.js,
+UNIX, VR, WebAssembly, WebExtensions, WebGL, WebRTC, WebSocket, WebXR
 --------------------------------------------------------------------------------
 Professional experience:
 Mar.2018 -
 Senior Software Engineer - Mozilla Corporation. Mountain View, CA
 - Working on WebXR contents creation helper tools and
   Hubs, Mozilla's Web-based virtual collaboration platform
--- Mainly working on Client side for Hubs by improving Audio experience and
-   Optimizing WebGL stuffs.
+-- Mainly working on Client side for Hubs by improving Audio experience,
+   building Automatic WebGL performance test, and Optimizing WebGL stuffs.
    https://hubs.mozilla.com/
 -- Contributing to Three.js, on which Hubs is built, for better WebXR and glTF
    supports and for performance optimization and bug-fixes.
    https://github.com/mrdoob/three.js/commits?author=takahirox
+-- Contributing to WebXR and its submodule sepcifications by pointing out
+   unclear descriptions and sending the patches clarifying them
 -- Leading WebXR Emulator browser Extension project which emulates WebXR (VR/AR)
    devices and improves WebXR content creators' productivity by allowing the
    test of WebXR applications in their desktop browsers.
@@ -110,6 +74,67 @@ Apr.2006 - May.2007
 Hardware Researcher - Fujitsu Laboratories, Ltd. Kanagawa Japan
 - Researched power saving CMOS circuit with sleep transistor
 --------------------------------------------------------------------------------
+Open sources: https://github.com/takahirox
+- Three.js: Collaborator and top 10 contributor out of 1700 contributors.
+  Three.js is the most widely-used JavaScript + WebGL graphics library.
+  Contributed ((*)Independently)
+  - glTF: Loader and Exporter better glTF core and extension specification
+          support, Extensibility mechanism for custom extensions
+  - Other Loaders: MMD(*), FBX
+  - Renderer: WebGL 2.0 support, WebGPU support, Optimization
+  - WebXR: Multi_view experiment
+  - Cartoon rendering: Toon Material(*), Outline Effect(*)
+  - Animation: CCD IK Solver(*), Physics for MMD(*), Audio-sync animation(*),
+               Skeletal Animation
+
+- three-gltf-extensions: Author
+  This project provides the handlers of glTF extensions, which the official
+  Three.js doesn't support, for Three.js glTF loader/exporter at top of the
+  loader/exporter extensibility mechanism.
+
+- glTF-Blender-IO-materials-variants: Author
+  glTF KHR_materials_variants extension Blender3D add-on wihch provides
+  importer, exporter, and UI for the extension.
+
+- A-Frame VR: Collaborator and core contributor
+  A-Frame is a web framework for creating WebXR content.
+  Released many components
+  - Rain effect: draws over 5000 rain drops with good performance by using 
+                 hardware instancing technique.
+  - MMD loader: loads MMD data and plays audio-sync animation with physics
+  - Outline effect: draws outline with face culling technique
+  Had demo presentations at A-Frame meetup.
+
+- Three.js MMDLoader sample applications: Author
+  VR, Music live, Face tracking, HTML5 Speech Synthesis, Physics simulation,
+  Interactive, Post processing with GLSL, Water simulation with GPU, and so on.
+
+- Touhou style game with JavaScript and raw WebGL/WebSocket/WebRTC: Author
+  A fan game of Touhou Project(Shooter game project of Team Shanghai Alice).
+  It's known for good performance, draws over 1000 elements in a scene with
+  WebGL and well-tuned JavaScript at 60fps on browser.
+  And it supports online coop play with WebSocket and WebRTC.
+
+- RISC-V emulator in Rust + WebAssembly: Author
+  I wrote RISC-V processor and peripheral devices emulator in Rust and
+  compiled to WebAssembly so that you can run Linux both as desktop application
+  and in your web browsers. It also supports debugger so you can step execution,
+  examine memory content, and so on. Good for RISC-V learners.
+
+- NES(Famicom) emulator in Rust + WebAssembly: Author
+  I wrote NES hardware emulator in Rust and compiled to WebAssembly so that
+  you can run NES both as desktop application and in your web browsers.
+
+- xv6-riscv: Contributor
+  I contributed to xv6-riscv, RISC-V port of a tiny Unix based OS for educations,
+  by sending patches to follow RISC-V and peripheral devices specifications more
+  properly.
+
+- riscv-isa-manual: Contributor
+- WebAssembly vs JavaScript benchmarks: Author
+- PDP-11 emulator in JavaScript: Author
+- MMD viewer with JavaScript and raw WebGL: Author
+--------------------------------------------------------------------------------
 Publications:
 - はじめてのOSコードリーディング / ISBN 978-4-7741-5464-0
   Introduction to OS source code reading
@@ -119,7 +144,13 @@ Publications:
   Japanese translation of Learning Three.js 2nd edition (Appendix contribution)
   https://www.oreilly.co.jp/books/9784873117706/
 --------------------------------------------------------------------------------
-Education:
+Presentations at conferences:
+第25回日本バーチャルリアリティ学会大会, Sep 18 2020
+The 25th Annual Conference of the Virtual Reality Society of Japan
+http://conference.vrsj.org/ac2020/program/3A2.html
+https://docs.google.com/presentation/d/1PUGR-GXkQZY-hcsfyCVdOtsVS6Vx5qjSlynpx3-awOg
+--------------------------------------------------------------------------------
+Educations:
 Tokyo Institute of Technology, 2006 - Tokyo Japan
 M.S., Computer Science - Web technologies Lab
 --------------------------------------------------------------------------------
