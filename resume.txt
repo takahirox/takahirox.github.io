@@ -12,7 +12,7 @@ Summary:
 Technical skills: (A-Z)
 A-Frame, AR, Blender3D, C/C++, CSS, Database, Git, GLSL, glTF, JavaScript, HTML,
 Node.js, Operating System, Processors, Python, Rust, SQL, Three.js, UNIX, VR,
-WebAssembly, WebGL, WebRTC, WebSocket, WebXR
+WebAssembly, WebExtensions, WebGL, WebRTC, WebSocket, WebXR
 --------------------------------------------------------------------------------
 Open source:
 - Three.js: Collaborator and top 10 contributor out of 800 contributors
@@ -39,49 +39,50 @@ Open source:
   WebVR, Music live, Face tracking, HTML5 Speech Synthesis, Physics simulation,
   Interactive, Post processing with GLSL, Water simulation with GPU, and so on.
 
+- glTF-Blender-IO-materials-variants: Author
+
 - Touhou style game with JavaScript and raw WebGL/WebSocket/WebRTC: Author
   A fan game of Touhou Project(Shooter game project of Team Shanghai Alice).
   It's known for good performance, draws over 1000 elements in a scene with
   WebGL and well-tuned JavaScript at 60fps on browser.
   And it supports online coop play with WebSocket and WebRTC.
 
+- RISC-V emulator written in Rust + WebAssembly: Author
+- NES(Famicom) emulator written in Rust: Author
 - PDP-11 emulator with JavaScript: Author
-  Runs/Debugs UNIX V6 on browser.
-
-- NES(Famicom) emulator with JavaScript and HTML5 canvas: Author
 - MMD viewer with JavaScript and raw WebGL: Author
-- NPM packages: Author of MMD parser and charset encoder besides the 
-                A-Frame components. 
+
 --------------------------------------------------------------------------------
 Professional experience:
 Mar.2018 -
 Senior Software Engineer - Mozilla Corporation. Mountain View, CA
 - Working on WebXR contents creation helper tools and
-  virtual collaboration platform
--- Mozilla Hubs which is a Web-based open and global virtual collaboration
-   platform. I have been working on Audio, optimization, and Performance test.
+  Hubs, Mozilla's Web-based virtual collaboration platform
+-- Mainly working on Client side for Hubs by improving Audio experience and
+   Optimizing WebGL stuffs.
    https://hubs.mozilla.com/
--- Leading WebXR Emulator Extension project which emulates WebXR (VR/AR)
+-- Contributing to Three.js, on which Hubs is built, for better WebXR and glTF
+   supports and for performance optimization and bug-fixes.
+   https://github.com/mrdoob/three.js/commits?author=takahirox
+-- Leading WebXR Emulator browser Extension project which emulates WebXR (VR/AR)
    devices and improves WebXR content creators' productivity by allowing the
    test of WebXR applications in their desktop browsers.
    https://blog.mozvr.com/webxr-emulator-extension/
--- iOS WebXR Viewer which is the first web browser on iOS to implement the WebXR
-   Device API. I worked on JavaScript API to provide WebXR API to users.
+-- Helped the iOS WebXR Viewer project, the first web browser supporting WebXR
+   API on iOS. Worked on the JavaScript API to provide the latest WebXR API to
+   users.
    https://blog.mozvr.com/webxr-viewer-2-0-released/
--- Led Immersive Custom Elements project which is a set of web components to
+-- Led the Immersive Custom Elements project, a set of web components to
    allow users to easily embed immersive (VR/AR) content into their web pages
    even without the knowledge of JavaScript, 3D graphics, or VR/AR.
    https://github.com/MozillaReality/immersive-custom-elements
--- Firefox Reality (VR Browser) Content Feed which showcases the best WebXR
-   applications and allows users to easily dicsover the great WebXR experiences.
-   I worked on the admin site and backend database server for the contents
+-- Firefox Reality (VR Browser) Content Feed, a showcase of the best WebXR
+   applications for users to easily dicsover the great WebXR experiences.
+   Worked on the admin site and backend database server for the contents
    management with React, Heroku, and PostgreSQL.
    https://blog.mozvr.com/firefox-reality-12/
 -- Worked on the performance analysis of WebXR/WebGL/JavaScript applications
    and reported the feedback to the Firefox team.
--- Working on Three.js contributions for WebXR, glTF, optimization, and
-   bug-fix stuffs.
-   https://github.com/mrdoob/three.js/commits?author=takahirox
 
 Feb.2013 - Mar.2017
 Senior Software Engineer - Fujitsu Technology and Business of America, Inc. Sunnyvale, CA
