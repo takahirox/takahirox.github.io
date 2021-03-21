@@ -30,11 +30,9 @@ main {
 }
 
 nav {
-  border-top: 1px solid #ECF0F1;
-  border-bottom: 1px solid #ECF0F1;
   padding: 1em 0;
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 1.2em;
 }
 nav ul {
   list-style: none;
