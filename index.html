@@ -1,186 +1,94 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>Takahiro's portfolio</title>
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" />
+  <title>Takahiro</title>
+  <link rel="stylesheet" href="./main.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/">Takahiro</a></h1>
+    <p>
+      Software engineer at Mozilla. Working with
+      <a href="https://www.khronos.org/gltf/">glTF</a> /
+      <a href="https://www.khronos.org/webgl/">WebGL</a> /
+      <a href="https://gpuweb.github.io/gpuweb/">WebGPU</a> /
+      <a href="https://www.w3.org/TR/webxr/">WebXR</a> and
+      on <a href="https://hubs.mozilla.com/">Hubs</a>. Aggressive open-source 
+      contributor and interested in Web technologies, Realtime 3D CG, Optimization,
+      and Low-level.
+    </p>
 
-			body {
-				background-color: #ffffff;
-				margin: 0px;
-				font-size: 15px;
-				line-height: 18px;
-				color: #555;
-			}
+    <nav class="menu">
+      <ul>
+        <li class="active"><a href="./index.html">About</a></li>
+        <li><a href="./projects.html">Projects</a></li>
+        <li><a href="./blog.html">Blog &amp; Books</a></li>
+        <li><a href="https://github.com/takahirox">GitHub</a></li>
+        <li><a href="./resume.txt">Resume</a></li>
+      </ul>
+    </nav>
+  </header>
 
-			h1 {
-				margin-top: 30px;
-				margin-bottom: 30px;
-				margin-left: 20px;
-				font-size: 25px;
-				font-weight: normal;
-			}
+  <main>
+    <p>
+      Hi, I am Takahiro. I am originally from Japan and based on California, the USA now.
+	  I am a Software enginner at Mozilla. Working with
+      <a href="https://www.khronos.org/gltf/">glTF</a> /
+      <a href="https://www.khronos.org/webgl/">WebGL</a> /
+      <a href="https://gpuweb.github.io/gpuweb/">WebGPU</a> /
+      <a href="https://www.w3.org/TR/webxr/">WebXR</a> and
+      on <a href="https://hubs.mozilla.com/">Hubs</a>.
+    </p>
+    <p>
+      I am very passionate about technology. I really like solving complex technical problems.
+      I like working with talented people. I like sharing my ideas with them and learning
+      from each other. 
+    </p>
+    <p>
+      I am really excited to work for Web 3D because they are
+      very hot and new challenging technologies. I like working on Web 3D library because
+      it has a lot of opportunities. Web 3D is growing since WebGL launched because of
+      the evolution from 2D Web contents to 3D, its portability, easiness to see,
+      easiness to make, easiness to collaborate. And now it's extending Web to the new world,
+      WebXR. Library/Framework is a center core of Web 3D. Working on it has a huge impact.
+    </p>
+    <p>
+      In Mozilla, I have been working on WebXR content creation helper tools to improve WebXR 
+      developers' productivity by allowing the test of WebXR application in their desktop
+      browsers without the need of WebXR devices. And I am in Hubs, Mozilla's Web-based open
+      and global virtual collaboration platform, team and have been working for Automatic
+      performance test, Audio experience improvement, and WebGL stuff optimizations.
+    </p>
+    <p>
+      I also like Low-level. Before I joined Mozilla, I worked on Oracle in-memory database
+      chip-level tuning project in Fujistu with Oracle database team. I led the Fujitsu
+      platform project of it with C/C++ and SIMD, and achieved 100x better performance
+      compared to the traditional databases.
+    </p>
+    <p>
+      Before that, I worked as a hardware engineer and designed server processor. I obtained
+      five patents to tackle challenging problems then.
+    </p>
+    <p>
+      In my free time I studied UNIX kernel and published a UNIX text used in multiple college
+      courses. Recently I wrote RISC-V, open ISA, processor and peripheral device emulator
+      in Rust + WebAssembly that users can run/debug Linux on it in their desktop browsers.
+      It is good for RISC-V learners.
+    </p>
+    <p>
+    I would be pleased if you would connect me via:
+    <ul>
+      <li><a href="https://twitter.com/superhoge">Twitter</a></li>
+      <li><a href="https://github.com/takahirox">GitHub</a></li>
+	  <li><a href="https://www.linkedin.com/in/takahiro-aoyagi-41a10a96/">LinkedIn</a></li>
+    </ul>
+    </p>
+  </main>
 
-			h2 {
-				color: #999;
-				font-size: 18px;
-				font-weight: normal;
-
-				margin-top: 5px;
-				margin-bottom: 30px;
-			}
-
-			hr {
-				border: 0px;
-				height: 1px;
-				background-color: #ccc;
-				margin: 30px 0px;
-			}
-
-			a {
-				color: #2194CE;
-				text-decoration: none;
-			}
-
-			a:hover {
-				text-decoration: underline;
-			}
-
-			#panel {
-				position: fixed;
-				left: 0px;
-				top: 0px;
-				bottom: 0px;
-				width: 200px;
-				background: #ffffff;
-			}
-
-				#panel #content {
-					padding: 0px 20px;
-				}
-
-				#panel img {
-					outline: 1px solid #ccc;
-				}
-
-				#panel #book {
-					text-align: center;
-					margin-top: 15px;
-				}
-
-			#viewer {
-				position: absolute;
-				top: 0px;
-				right: 0px;
-				left: 180px;
-				padding: 28px 20px;
-			}
-
-				#viewer #portfolio img {
-					outline: 1px solid #ccc;
-					width: 400px;
-					height: 300px;
-				}
-
-				#viewer #portfolio img.wide {
-					width: 600px;
-				}
-
-				#viewer #portfolio h3 {
-					color: #999;
-					font-size: 15px;
-					font-weight: normal;
-
-					margin-top: 15px;
-					margin-bottom: 10px;
-				}
-
-			#mmdlicense {
-				font-size: 15px;
-			}
-
-		</style>
-	</head>
-	<body>
-
-		<div id="panel" class="collapsed">
-			<h1>Takahiro</h1>
-
-			<div id="content">
-				Software Engineer<br /><br />
-
-				Web/3D/VR/AR<br />
-				Performance<br />
-				Emulator<br /><br />
-
-				<a href="https://www.linkedin.com/in/takahiro-aoyagi-41a10a96" target="_blank">LinkedIn</a><br />
-				<a href="./resume.txt" target="_blank">Resume</a><br />
-				<a href="https://twitter.com/superhoge" target="_blank">Twitter @superhoge</a><br />
-				<a href="https://github.com/takahirox" target="_blank">GitHub @takahirox</a><br />
-				<a href="https://blog.mozvr.com/author/takahiro/" target="_blank">Blog</a> / <a href="http://d.hatena.ne.jp/takahirox" target="_blank">2</a><br /><br />
-
-				<a href="https://github.com/mrdoob/three.js/graphs/contributors" target="_blank">Three.js collaborator</a><br />
-				<a href="https://github.com/aframevr/aframe/graphs/contributors" target="_blank">A-Frame collaborator</a><br />
-
-				<hr />
-
-				<div id="book">
-					<h2>Publications</h2>
-					<a href="https://gihyo.jp/book/2013/978-4-7741-5464-0" target="_blank"><img src="images/oscodereading.png" width="100" height="132" /></a><br /><br />
-					<h2>Contributions</h2>
-					<a href="https://www.oreilly.co.jp/books/9784873117706/" target="_blank"><img src="images/threejs2nd.png" width="100" height="132" /></a>
-				</div>
-			</div>
-		</div>
-
-		<div id="viewer">
-
-			<h2>portfolio <a id="mmdlicense" href="https://github.com/mrdoob/three.js/blob/dev/examples/models/mmd/Readme.txt" target="_blank">(MMD assets License)</a></h2>
-
-			<div id="portfolio">
-
-				<h3>Three.js contribution</h3>
-				<a href="https://threejs.org/examples/#webgl_loader_mmd" title="Three.js MMDLoader" target="_blank"><img src="images/mmdloader.png"></a>
-				<a href="https://threejs.org/examples/#webgl_materials_variations_toon" title="Three.js MeshToonMaterial" target="_blank"><img src="images/toonmaterial.png"></a>
-				<a href="https://threejs.org/examples/#webgldeferred_animation" title="Three.js WebGLDeferredRenderer" target="_blank"><img src="images/deferred.png"></a>
-				<a href="https://threejs.org/examples/#webgl_loader_gltf" title="Three.js GLTFLoader" target="_blank"><img src="images/gltfloader.png"></a>
-				<a href="https://threejs.org/examples/#webgl_loader_gltf2" title="Three.js GLTF2Loader (glTF 2.0 loader)" target="_blank"><img src="images/gltf2loader.png"></a>
-				<a href="https://threejs.org/examples/#webgl_loader_fbx" title="Three.js FBXLoader (FBX Binary Loader)" target="_blank"><img src="images/fbxloader.png"></a>
-
-				<h3>A-Frame component</h3>
-				<a href="https://github.com/takahirox/a-mmd" title="A-Frame MMD component" target="_blank"><img src="images/aframemmd.png"></a>
-				<a href="https://github.com/takahirox/aframe-rain" title="A-Frame Rain effect component" target="_blank"><img src="images/aframerain.png"></a>
-				<a href="https://github.com/takahirox/aframe-outline" title="A-Frame Outline effect component" target="_blank"><img src="images/aframeoutline.png"></a>
-				<a href="https://github.com/takahirox/aframe-deferred-renderer" title="A-Frame Deferred Renderer component" target="_blank"><img src="images/aframedeferred.png"></a>
-
-				<h3>AR, WebRTC, Shader, Physics, Interactive</h3>
-				<a href="https://takahirox.github.io/mmd-ar/examples/barcode.html" title="MMD AR on browser" target="_blank"><img src="images/mmdar.png"></a>
-				<a href="https://github.com/takahirox/ThreeNetwork" title="Three.js WebRTC library" target="_blank"><img src="images/threewebrtc.png"></a>
-				<a href="https://github.com/takahirox/ThreeNetwork" title="Three.js WebRTC library (Network shared skinning edit)" target="_blank"><img src="images/threewebrtcmmd.png"></a>
-				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_music_live" title="MMD Music live" target="_blank"><img src="images/mmdmusiclive.png"></a>
-				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_water" title="MMD Water simulation" target="_blank"><img src="images/mmdwater.png"></a>
-				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_postprocessing_lowresolution" title="MMD Low resolution post processing" target="_blank"><img src="images/mmdlowresolution.png"></a>
-				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_physics" title="MMD Physics simulation" target="_blank"><img src="images/mmdphysics.png"></a>
-				<a href="http://takahirox.github.io/MMDLoader-app/index.html#app_interactive" title="MMD interactive app" target="_blank"><img src="images/mmdinteractive.png"></a>
-				<a href="http://glslsandbox.com/e#32080" title="Ray marching" target="_blank"><img src="images/raymarching.png"></a>
-
-				<h3>Raw WebGL, Raw WebRTC</h3>
-				<a href="https://github.com/takahirox/mmd-viewer-js" title="MMD Viewer with raw WebGL" target="_blank"><img src="images/mmdviewer.png"></a>
-				<a href="https://github.com/takahirox/toho-like-js" title="Touhou Style Danmaku shooter with raw WebGL" target="_blank"><img src="images/toholikejs.png"></a>
-				<a href="https://github.com/takahirox/toho-like-js" title="Touhou Style Danmaku shooter with raw WebGL and WebRTC" target="_blank"><img src="images/toholikejswebrtc.png" class="wide"></a>
-
-				<h3>Emulator</h3>
-				<a href="https://github.com/takahirox/pdp11-js" title="UNIX V6 on PDP-11 emulator" target="_blank"><img src="images/pdp11emu.png"></a>
-				<a href="https://github.com/takahirox/nes-js" title="NES(Famicom) emulator" target="_blank"><img src="images/nesemu.png"></a>
-
-				<h3>Presentation</h3>
-				<a href="https://www.meetup.com/A-Frame/events/236779023/" title="A-Frame + WebVR Meetup @ Mozilla SF Jan 2017" target="_blank"><img src="images/aframemeetup.png"></a>
-				<a href="https://www.meetup.com/A-Frame/events/237230881/" title="A-Frame + WebVR Meetup @ Mozilla SF Feb 2017" target="_blank"><img src="images/aframemeetup2.png"></a>
-
-			</div>
-
-		</div>
-
-	</body>
+  <footer>
+    <span>&copy; 2021 Takahiro.</span>
+  </footer>
+</body>
 </html>

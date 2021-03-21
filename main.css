@@ -1,0 +1,75 @@
+body {
+  font-family: verdana;
+  margin: 0;
+}
+
+a,
+a:visited {
+  text-decoration: none;
+}
+a:focus,
+a:hover {
+  box-shadow: inset 0 calc(-0.09em) 0 0 #FFF, inset 0 -0.14em 0 0 rgba(255, 255, 255, 0.2), inset 0 -0.14em 0 0 currentColor;
+  text-decoration: none;
+}
+
+header {
+  max-width: 45rem;
+  margin: 0 auto 2em auto;
+  padding: 1em 0
+}
+
+main {
+  max-width: 45rem;
+  margin: 0 auto 2em auto;
+}
+
+nav {
+  border-top: 1px solid #ECF0F1;
+  border-bottom: 1px solid #ECF0F1;
+  padding: 1em 0;
+  text-align: center;
+  font-size: 1.2rem;
+}
+nav ul {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  text-align: center;
+}
+nav ul li {
+  display: inline-block;
+  margin: 0;
+  padding: 0 .5em;
+}
+nav.menu ul:not(:hover) .active a {
+  box-shadow: inset 0 calc(-0.09em) 0 0 #FFF, inset 0 -0.14em 0 0 rgba(255, 255, 255, 0.2), inset 0 -0.14em 0 0 currentColor;
+  text-decoration: none;
+}
+
+time {
+  font-style: italic;
+}
+
+.post-list li {
+  margin-top: 1em;
+}
+.post-list time::before {
+  content: " - ";
+}
+.post-list time::after {
+  content: "\A\A";
+  white-space: pre;
+}
+
+img.front-cover {
+  width: 120px;
+  margin: 0 1em 1em 1em;
+}
+
+footer {
+  background: #F3F3F3;
+  padding: 1em 0;
+  text-align: center;
+}
