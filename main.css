@@ -13,6 +13,11 @@ a:hover {
   text-decoration: none;
 }
 
+picture > a:focus,
+picture > a:hover {
+  box-shadow: none;
+}
+
 header {
   max-width: 45rem;
   margin: 0 auto 2em auto;
@@ -52,6 +57,10 @@ time {
   font-style: italic;
 }
 
+article {
+  padding-bottom: 1em;
+}
+
 .post-list li {
   margin-top: 1em;
 }
@@ -66,6 +75,11 @@ time {
 img.front-cover {
   width: 120px;
   margin: 0 1em 1em 1em;
+}
+
+img.portfolio-screenshot {
+  width: 90%;
+  padding: 0 5% 0;
 }
 
 footer {
