@@ -7,26 +7,28 @@ Blog:      https://blog.mozvr.com/author/takahiro/
 --------------------------------------------------------------------------------
 Summary:
 - Senior full-stack software engineer. Interested in low-level, open source,
-  performance, web technologies, WebGL, WebXR(VR/AR), and WebGPU.
+  performance, browser development, web technologies, and web standards(WebGL,
+  WebGPU, WebXR).
 - Aggressive open source contributor.
 --------------------------------------------------------------------------------
 Technical skills: (A-Z)
-A-Frame, AR, Blender3D, C/C++, CSS, Database, Git, GLSL, glTF, JavaScript, HTML,
-Node.js, Operating System, Processors, Python, RISC-V, Rust, SQL, Three.js,
-UNIX, VR, WebAssembly, WebExtensions, WebGL, WebRTC, WebSocket, WebXR
+AI, AR, Blender3D, C/C++, CSS, Database, Docker, Elixir, Git, GLSL, glTF,
+JavaScript, HTML, Node.js, Operating System, Processors, Python, RISC-V, Rust,
+SQL, Three.js, TypeScript, UNIX, VR, WebAssembly, WebAudio, WebExtensions,
+WebGL, WebGPU, WebRTC, WebSocket, WebXR
 --------------------------------------------------------------------------------
 Professional experience:
 Mar.2018 -
 Senior Software Engineer - Mozilla Corporation. Mountain View, CA
-- Working on WebXR contents creation helper tools and
-  Hubs, Mozilla's Web-based virtual collaboration platform
--- Mainly working on Client side for Hubs by improving Audio experience,
-   building Automatic WebGL performance test, and Optimizing WebGL stuffs.
-   https://hubs.mozilla.com/
--- Contributing to Three.js, on which Hubs is built, for better WebXR and glTF
-   supports and for performance optimization and bug-fixes.
-   https://github.com/mrdoob/three.js/commits?author=takahirox
--- Contributing to WebXR and its submodule sepcifications by pointing out
+- Hubs team https://hubs.mozilla.com/
+-- Hubs is a Web-based open and global virtual collaboration platform
+-- I worked mainly for Client like ECS architecture migration, performance
+   optimization, better Mac/Android/iOS support, contribution to Three.js on
+   which Hubs is built, glTF extension support, documenting, and backend with
+   Elixir.
+
+- Mixed Reality team
+-- Contributed to WebXR and its submodule sepcifications by pointing out
    unclear descriptions and sending the patches clarifying them
 -- Leading WebXR Emulator browser Extension project which emulates WebXR (VR/AR)
    devices and improves WebXR content creators' productivity by allowing the
@@ -74,36 +76,55 @@ Apr.2006 - May.2007
 Hardware Researcher - Fujitsu Laboratories, Ltd. Kanagawa Japan
 - Researched power saving CMOS circuit with sleep transistor
 --------------------------------------------------------------------------------
-Open sources: https://github.com/takahirox
+Open source contributions: https://github.com/takahirox
 - Three.js: Collaborator and top 10 contributor out of 1700 contributors.
   Three.js is the most widely-used JavaScript + WebGL graphics library.
-  Contributed ((*)Independently)
-  - glTF: Loader and Exporter better glTF core and extension specification
-          support, Extensibility mechanism for custom extensions
-  - Other Loaders: MMD(*), FBX
-  - Renderer: WebGL 2.0 support, WebGPU support, Optimization
-  - WebXR: Multi_view experiment
-  - Cartoon rendering: Toon Material(*), Outline Effect(*)
-  - Animation: CCD IK Solver(*), Physics for MMD(*), Audio-sync animation(*),
-               Skeletal Animation
+  Contributed glTF, MMD, Cartoon rendering, Renderer, Physics, IKSolver,
+  WebXR manager, optimization, bug-fixes, and so on.
+  
+- Chromium: Contributor
+  Chromium is an open-source web browser project and is based for Google Chrome.
+  I have been contributing to it as an individual mainly for WebGPU implementation.
+  https://chromium-review.googlesource.com/q/owner:hogehoge@gachapin.jp
+  https://dawn-review.googlesource.com/q/owner:hogehoge@gachapin.jp
+
+- WebGPU: Contributor
+  WebGPU is a new web standard API to provide modern 3D graphics and compute
+  capabilities to web developers. The API is designed to efficient mapping to
+  lower-level native GPU APIs like Vulkan and Metal. I have been contributing
+  to WebGPU specification mainly for bugfix and clarification as an individual.
+  Also, contributing to WebGPU Conformance Test Suite.
+
+- WebGPU devtools: Author
+  WebGPU devtools is a Web browser extension that helps debug WebGPU applications
+  by monitoring WebGPU usage. You can check created WebGPU objects, WebGPU
+  command history and callback, error WebGPU commands, WGSL shader code and
+  compile error, Buffer/Texture/Framebuffer contents, and so on.
+
+- Online WGSL editor: Author
+  WGSL (WebGPU Shading language) is a new shading language introduced for WebGPU.
+  Online WGSL editor is a live coding WGSL editor running on web browser for
+  people who want to learn. They can easily start to try WGSL by just opening
+  the editor page The editor supports rendering, automatic compilation, and
+  error highlighting.
+
+- Tiny Web Metaverse: Author
+  Tiny Web Metaverse is a Web-based multi-user 3D virtual space lightweight
+  framework with high flexibility, good extensibility, and easy self-hosting.
+  It is built on web standards, making it familiar and easy to use for developers
+  with Web development experience. Its high scalability makes it a good match
+  even for AI, for example it supports runtime 3D model generation using Text to
+  3D Generative AI.
 
 - three-gltf-extensions: Author
   This project provides the handlers of glTF extensions, which the official
   Three.js doesn't support, for Three.js glTF loader/exporter at top of the
   loader/exporter extensibility mechanism.
 
-- glTF-Blender-IO-materials-variants: Author
-  glTF KHR_materials_variants extension Blender3D add-on wihch provides
-  importer, exporter, and UI for the extension.
-
-- A-Frame VR: Collaborator and core contributor
-  A-Frame is a web framework for creating WebXR content.
-  Released many components
-  - Rain effect: draws over 5000 rain drops with good performance by using 
-                 hardware instancing technique.
-  - MMD loader: loads MMD data and plays audio-sync animation with physics
-  - Outline effect: draws outline with face culling technique
-  Had demo presentations at A-Frame meetup.
+- glTF extension Blender addons: Author
+  I made several Blender addons for some glTF extensions that are not supported
+  by the Official Blender glTF I/O at that time or for a certain special Blender
+  use.
 
 - Three.js MMDLoader sample applications: Author
   VR, Music live, Face tracking, HTML5 Speech Synthesis, Physics simulation,
@@ -130,6 +151,7 @@ Open sources: https://github.com/takahirox
   by sending patches to follow RISC-V and peripheral devices specifications more
   properly.
 
+- A-Frame VR: Collaborator and core contributor
 - riscv-isa-manual: Contributor
 - WebAssembly vs JavaScript benchmarks: Author
 - PDP-11 emulator in JavaScript: Author
