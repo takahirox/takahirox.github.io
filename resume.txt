@@ -18,7 +18,7 @@ SQL, Three.js, TypeScript, UNIX, VR, WebAssembly, WebAudio, WebExtensions,
 WebGL, WebGPU, WebRTC, WebSocket, WebXR
 --------------------------------------------------------------------------------
 Professional experience:
-Mar.2018 -
+Mar.2018 - Jan.2024
 Senior Software Engineer - Mozilla Corporation. Mountain View, CA
 - Hubs team https://hubs.mozilla.com/
 -- Hubs is a Web-based open and global virtual collaboration platform
@@ -115,6 +115,14 @@ Open source contributions: https://github.com/takahirox
   with Web development experience. Its high scalability makes it a good match
   even for AI, for example it supports runtime 3D model generation using Text to
   3D Generative AI.
+
+- In-browser local AI inference apps: Author
+  I am interested in in-browser local AI inference from the perspectives of
+  usability and privacy. I have created several experimental apps. Web AI Chat
+  is a web app that incorporates an inference engine, allowing users to chat with
+  AI without installing any special software. Whisper as Web Extension is a
+  browser extension that incorporates an inference engine and OpenAI's Whisper
+  model, enabling serverless speech to text recognition.
 
 - three-gltf-extensions: Author
   This project provides the handlers of glTF extensions, which the official
