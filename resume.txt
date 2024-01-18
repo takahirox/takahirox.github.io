@@ -1,5 +1,5 @@
-Takahiro Aoyagi / ******@******.com (dummy)
-somewhere, CA ****** (dummy) / ***-***-**** (dummy)
+Takahiro Aoyagi
+Japan
 LinkedIn:  https://www.linkedin.com/in/takahiro-aoyagi-41a10a96
 GitHub:    https://github.com/takahirox
 Portfolio: https://takahirox.github.io
@@ -21,34 +21,34 @@ Professional experience:
 Mar.2018 - Jan.2024
 Senior Software Engineer - Mozilla Corporation. Mountain View, CA
 - Hubs team https://hubs.mozilla.com/
--- Hubs is a Web-based open and global virtual collaboration platform
--- I worked mainly for Client like ECS architecture migration, performance
-   optimization, better Mac/Android/iOS support, contribution to Three.js on
-   which Hubs is built, glTF extension support, documenting, and backend with
-   Elixir.
+  - Hubs is a Web-based open and global virtual collaboration platform
+  - I worked mainly for Client like ECS architecture migration, performance
+    optimization, better Mac/Android/iOS support, contribution to Three.js on
+    which Hubs is built, glTF extension support, documenting, and backend with
+    Elixir.
 
 - Mixed Reality team
--- Contributed to WebXR and its submodule sepcifications by pointing out
-   unclear descriptions and sending the patches clarifying them
--- Leading WebXR Emulator browser Extension project which emulates WebXR (VR/AR)
-   devices and improves WebXR content creators' productivity by allowing the
-   test of WebXR applications in their desktop browsers.
-   https://blog.mozvr.com/webxr-emulator-extension/
--- Helped the iOS WebXR Viewer project, the first web browser supporting WebXR
-   API on iOS. Worked on the JavaScript API to provide the latest WebXR API to
-   users.
-   https://blog.mozvr.com/webxr-viewer-2-0-released/
--- Led the Immersive Custom Elements project, a set of web components to
-   allow users to easily embed immersive (VR/AR) content into their web pages
-   even without the knowledge of JavaScript, 3D graphics, or VR/AR.
-   https://github.com/MozillaReality/immersive-custom-elements
--- Firefox Reality (VR Browser) Content Feed, a showcase of the best WebXR
-   applications for users to easily dicsover the great WebXR experiences.
-   Worked on the admin site and backend database server for the contents
-   management with React, Heroku, and PostgreSQL.
-   https://blog.mozvr.com/firefox-reality-12/
--- Worked on the performance analysis of WebXR/WebGL/JavaScript applications
-   and reported the feedback to the Firefox team.
+  - Contributed to WebXR and its submodule sepcifications by pointing out
+    unclear descriptions and sending the patches clarifying them
+  - Leading WebXR Emulator browser Extension project which emulates WebXR (VR/AR)
+    devices and improves WebXR content creators' productivity by allowing the
+    test of WebXR applications in their desktop browsers.
+    https://blog.mozvr.com/webxr-emulator-extension/
+  - Helped the iOS WebXR Viewer project, the first web browser supporting WebXR
+    API on iOS. Worked on the JavaScript API to provide the latest WebXR API to
+    users.
+    https://blog.mozvr.com/webxr-viewer-2-0-released/
+  - Led the Immersive Custom Elements project, a set of web components to
+    allow users to easily embed immersive (VR/AR) content into their web pages
+    even without the knowledge of JavaScript, 3D graphics, or VR/AR.
+    https://github.com/MozillaReality/immersive-custom-elements
+  - Firefox Reality (VR Browser) Content Feed, a showcase of the best WebXR
+    applications for users to easily dicsover the great WebXR experiences.
+    Worked on the admin site and backend database server for the contents
+    management with React, Heroku, and PostgreSQL.
+    https://blog.mozvr.com/firefox-reality-12/
+  - Worked on the performance analysis of WebXR/WebGL/JavaScript applications
+    and reported the feedback to the Firefox team.
 
 Feb.2013 - Mar.2017
 Senior Software Engineer - Fujitsu Technology and Business of America, Inc. Sunnyvale, CA
@@ -63,13 +63,13 @@ Senior Software Engineer - Fujitsu Technology and Business of America, Inc. Sunn
 Jun.2007 - Feb.2013
 Hardware Engineer - Fujitsu Limited. Kanagawa Japan
 - Worked on high-end server processor. Designed and developed the modules of
--- Multi port L1 cache memory used in Supercomputer K which received
-   first place on the TOP500 project in June 2011. Individually made automated
-   timing library build system and shared with the team.
--- High-speed and High-density cache memory for interconnect processor.
-   Patented a technique for archiving fast read and small area circuit.
--- Last level cache memory controller for Exascale supercomputer.
-   Obtained four patents to improve memory capacity and energy efficiency.
+  - Multi port L1 cache memory used in Supercomputer K which received
+    first place on the TOP500 project in June 2011. Individually made automated
+    timing library build system and shared with the team.
+  - High-speed and High-density cache memory for interconnect processor.
+    Patented a technique for archiving fast read and small area circuit.
+  - Last level cache memory controller for Exascale supercomputer.
+    Obtained four patents to improve memory capacity and energy efficiency.
 - Worked with SystemC, verilog, and SPICE
 
 Apr.2006 - May.2007
