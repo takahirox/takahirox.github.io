@@ -6,18 +6,38 @@ Portfolio: https://takahirox.github.io
 Blog:      https://blog.mozvr.com/author/takahiro/
 --------------------------------------------------------------------------------
 Summary:
-- Senior full-stack software engineer. Interested in low-level, open source,
+- Senior full-stack software engineer. Interested in AI, low-level, open source,
   performance, browser development, web technologies, and web standards(WebGL,
   WebGPU, WebXR).
 - Aggressive open source contributor.
 --------------------------------------------------------------------------------
 Technical skills: (A-Z)
 AI, AR, Blender3D, C/C++, CSS, Database, Docker, Elixir, Git, GLSL, glTF,
-JavaScript, HTML, Node.js, Operating System, Processors, Python, RISC-V, Rust,
-SQL, Three.js, TypeScript, UNIX, VR, WebAssembly, WebAudio, WebExtensions,
+JavaScript, HTML, Node.js, Operating System, Processors, Python, React, RISC-V,
+Rust, SQL, Three.js, TypeScript, UNIX, VR, WebAssembly, WebAudio, WebExtensions,
 WebGL, WebGPU, WebRTC, WebSocket, WebXR
 --------------------------------------------------------------------------------
 Professional experience:
+Mar.2024 - Present
+Full Stack Engineer - Stability AI Japan
+- DreamStudio Team https://dreamstudio.ai/
+  - DreamStudio is a user-friendly web application that leverages the latest
+    Stable Diffusion model to generate images.
+  - Developed a configuration-driven system to automate UI and logic generation,
+    significantly accelerating development time and ensuring consistency across
+    multiple AI tools.
+  - Pioneered innovative features, user interfaces, and user experiences through
+    frontend prototyping, including the exploration of automatic UI and logic
+    generation.
+
+- Stable Assistant Team https://stability.ai/stable-assistant
+  - Stable Assistant is an intuitive chat-based web application that empowers
+    users to create a wide range of content, including images, videos,
+    3D models, and audio.
+  - Successfully integrated new Stability APIs and developed intuitive UI
+    elements, such as the Mask Drawing UI for the Inpaint feature, to enhance
+    user experience.
+
 Mar.2018 - Jan.2024
 Senior Software Engineer - Mozilla Corporation. Mountain View, CA
 - Hubs team https://hubs.mozilla.com/
