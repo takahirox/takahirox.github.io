@@ -38,6 +38,14 @@ Full Stack Engineer - Stability AI Japan
     elements, such as the Mask Drawing UI for the Inpaint feature, to enhance
     user experience.
 
+Jan 2024 - Present
+Web/WebXR/3D/AI Software Engineer - Freelance
+- Designed and developed AI chatbots for a web-based platform
+- Improved 3D web client on a web-based platform
+- Conducted meetings in English with affiliated companies
+- Enhanced control of AI chatbot 3D avatars
+- Improved runtime performance of a WebXR app framework
+
 Mar.2018 - Jan.2024
 Senior Software Engineer - Mozilla Corporation. Mountain View, CA
 - Hubs team https://hubs.mozilla.com/
