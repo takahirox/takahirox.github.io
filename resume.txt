@@ -19,6 +19,9 @@ WebGL, WebGPU, WebRTC, WebSocket, WebXR
 Professional experience:
 Jan.2025 - Present
 Staff Software Engineer (3D Client Lead) - Hytopia (Japan/Remote)
+- HYTOPIA is a web-native UGC gaming platform where creators can build and play multiplayer
+  games across browser and mobile. 2.5M+ downloads on Google Play and daily active players
+  peaking at 39.4k.
 - Led technical direction and architecture decisions for the 3D web client.
 - Implemented core client systems (TypeScript, Three.js, WebGL2).
 - Targeted stable 30 FPS on low-end Android via profiling-driven iterative optimization across
