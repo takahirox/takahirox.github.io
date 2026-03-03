@@ -3,7 +3,6 @@ Japan
 LinkedIn:  https://www.linkedin.com/in/takahiro-aoyagi-41a10a96
 GitHub:    https://github.com/takahirox
 Portfolio: https://takahirox.github.io
-Blog:      https://blog.mozvr.com/author/takahiro/
 --------------------------------------------------------------------------------
 Summary:
 - Staff software engineer. Interested in AI, low-level, graphics, open source,
