@@ -18,7 +18,20 @@ Rust, SQL, Three.js, TypeScript, UNIX, VR, WebAssembly, WebAudio, WebExtensions,
 WebGL, WebGPU, WebRTC, WebSocket, WebXR
 --------------------------------------------------------------------------------
 Professional experience:
-Mar.2024 - Present
+Jan.2025 - Present
+Staff Software Engineer (3D Client Lead) - Hytopia (Japan/Remote)
+- Led technical direction and architecture decisions for the 3D web client.
+- Implemented core client systems (TypeScript, Three.js, WebGL2).
+- Targeted stable 30 FPS on low-end Android via profiling-driven iterative optimization across
+  rendering, update loop / game logic, assets, and memory/GC.
+- Reduced frame spikes/jank and improved initialization time through targeted runtime and
+  initialization optimizations (e.g., matrix update strategy, instancing, offloading heavy
+  initialization work to Web Workers, and resource management improvements).
+- Drove quality via design and code reviews.
+- Used generative AI tools to accelerate coding, refactoring, debugging, and performance
+  investigation.
+
+Mar.2024 - Dec.2024
 Full Stack Engineer - Stability AI Japan
 - DreamStudio Team https://dreamstudio.ai/
   - DreamStudio is a user-friendly web application that leverages the latest
